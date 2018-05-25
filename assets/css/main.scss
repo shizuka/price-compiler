@@ -7,3 +7,89 @@
 //**** MIXINS ****//
 @import 'helpers.scss';
 
+//**** COLORS ****//
+$c-eganblue: #1d428a;
+
+$md-red-dark: #c0392b;
+$md-org-dark: #d35400;
+$md-yel-dark: #f39c12;
+$md-grn-dark: #27ae60;
+$md-tel-dark: #16a085;
+$md-blu-dark: #2980b9;
+$md-pur-dark: #8e44ad;
+
+$md-red-lite: #e74c3c;
+$md-org-lite: #e67e22;
+$md-yel-lite: #f1c40f;
+$md-grn-lite: #2ecc71;
+$md-tel-lite: #1abc9c;
+$md-blu-lite: #3498db;
+$md-pur-lite: #9b59b6;
+
+$md-wht:      #ecf0f1;
+$md-gry-lite: #bdc3c7;
+$md-gry-mid:  #95a5a6;
+$md-gry-dark: #7f8c8d;
+$md-blk-lite: #34495e;
+$md-blk-dark: #2c3e50;
+
+//**** USED COLORS ****//
+//backgrounds $cb
+$cb-body: $md-wht;
+$cb-header: $c-eganblue;
+$cb-drop: $md-gry-lite;
+$cb-console: $md-blk-dark;
+
+//borders $cd
+$cd-drop: 2px dashed $md-gry-mid;
+
+//text $ct
+$ct-text: $md-blk-dark;
+$ct-title: $md-wht;
+$ct-console: $md-wht;
+
+//links $cl
+$cl-link: $md-blu-dark;
+$cl-hover: lighten($cl-link, 25%);
+
+//**** PAGE BLOCKS ****//
+body {
+  background-color: $cb-body;
+}
+
+#wrapper {
+  margin: 1.5em auto;
+}
+
+#header {
+  background-color: $cb-header;
+  h1 {
+    color: $ct-title;
+  }
+}
+
+#drop {
+  background-color: $cb-drop;
+  border: $cd-drop;
+}
+
+#heuristics {
+
+}
+
+#action {
+  .progress {
+    margin: 1em;
+  }
+}
+
+#console {
+  background-color: $cb-console;
+  color: $ct-console;
+  padding: 0.5em;
+  
+}
+
+#download {
+
+}

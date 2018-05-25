@@ -12,14 +12,74 @@
     <link rel="stylesheet" href="assets/css/bootstrap.min.css">
     <link rel="stylesheet" href="assets/css/main.css">
 
-    <title>Initial Commit</title>
+    <title>Enterprise Item Update - Price Book Automation</title>
   </head>
   <body>
-    
-    <div class="container">
-      <h1>Hello, world!</h1>
-    </div>
+    <div id="wrapper" class="container">
+      <div id="header" class="row justify-content-between">
+        <div class="col">
+          <h1>Enterprise &ndash; Price Update Automation</h1>
+        </div>
+        <div id="drop" class="col-2">
+          DROP FILE HERE
+        </div>
+      </div>
 
+      <div id="heuristics" class="container">
+        <h2>Heuristics</h2>
+        <ul id="found" class="list-unstyled">
+          <li>[&checkmark;] Found Graybar-Dayna</li>
+          <li>[&checkmark;] Found Graybar-Dan</li>
+          <li>[&checkmark;] Found Werner</li>
+        </ul>
+      </div>
+
+      <div id="action" class="container">
+        <h2>Compile Price Books</h2>
+        <div class="row justify-content-between">
+              <button type="button" class="btn btn-primary col-1">START</button>
+          <div class="progress col">
+            <div id="progress" class="progress-bar bg-success" style="width: 50%"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="container">
+        <h2>Console</h2>
+        <pre id="console" class="pre-scrollable">
+LOADING: EGAN COMPANY ACCUBID 20180516.csv
+FOUND: Graybar-Dayna - confidence 3/3
+LOAD: ACCUBID 18-05-16.xlsx
+FOUND: Graybar-Dan - confidence 3/3
+LOAD: some weird.xlsx
+ERROR: File doesn't match known heuristics
+-------
+STARTING COMPILATION
+FIXING DAYNA COUNTS --- count > unit --- List Price --- Net Price
+00000000000 - description --- 15CT > C --- $oldlist > $newlist --- $oldnet > $newnet
+00000000000 - description --- 15CT > C --- $oldlist > $newlist --- $oldnet > $newnet
+00000000000 - description --- 15CT > C --- $oldlist > $newlist --- $oldnet > $newnet
+FIXING DAN LINES
+00000000000 - galv thing --- 1 > 10
+Merging lists... done.
+DEDUPLICATING LIST
+00000000000 --- found X times --- $price $price $price $price --- using Graybar-Dan $price
+00000000000 --- found X times --- $price $price $price $price --- using Graybar-Dan $price
+00000000000 --- found X times --- $price $price $price $price --- using Graybar-Dan $price
+00000000000 --- found X times --- $price $price $price $price --- using Graybar-Dan $price
+00000000000 --- found X times --- $price $price $price $price --- using Graybar-Dan $price
+00000000000 --- found X times --- $price $price $price $price --- using Graybar-Dan $price
+-------
+FINISHED COMPILATION in 00:00s
+        </pre>
+      </div>
+
+      <div id="download" class="container">
+        <h2>Download Combined File</h2>
+        <button type="button" class="btn btn-success">Dayna Dan Combined yyyymmdd.csv</button>
+      </div>
+
+    </div>
     <!-- Scripts -->
     <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
     <script src="assets/js/bootstrap.bundle.min.js"></script>
