@@ -1,0 +1,9 @@
+// Helper Mixins
+// Shizuka Kamishima - 2016-05-26
+
+@mixin transition($transition...) {
+  -moz-transition:    $transition;
+  -o-transition:      $transition;
+  -webkit-transition: $transition;
+  transition:         $transition;
+}
