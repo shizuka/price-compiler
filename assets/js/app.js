@@ -6,6 +6,7 @@
 //**** LOGGING ****//
 function conlog(msg) {
   document.getElementById('console').value += msg + '\n';
+  console.log(msg);
 }
 
 //**** ANGULAR ****//
@@ -47,7 +48,7 @@ var bookfiles = [];
 var books = [];
 
 var rABS = true;
-function loadBook(f) {
+function loadBook(f,num) {
   var startTime = new Date();
   var reader = new FileReader();
   reader.onload = function(e) {
@@ -56,9 +57,8 @@ function loadBook(f) {
     var workbook = XLSX.read(data, {type: rABS ? 'binary' : 'array'});
     books.push(workbook);
     //books.push(XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], {header:1}));
-    var endTime = new Date();
-    var timeDiff = (endTime - startTime);
-    console.log(f.name + " done in " + timeDiff + "ms");
+    var enLoad = new Date();
+    conlog("Loaded " + re.exec(f.name)[1].toUpperCase() + " [" + f.name + "] in " + (enLoad - startTime) + "ms.");
 
     //<--chain to heuristics here
   };
@@ -76,12 +76,13 @@ function handleDrop(e) {
       //if not a file, ignore
       if (e.dataTransfer.items[i].kind === 'file') {
         var file = e.dataTransfer.items[i].getAsFile();
-        console.log("...file["+i+"].name = " + file.name);
+        console.log("...["+i+"] " + file.name);
         var ext = re.exec(file.name)[1];
         if (ext == "csv" || ext == "xlsx" || ext == "xls") {
-          console.log("...valid extension, loading...");
-          conlog("Loading " + ext.toUpperCase() + ": " + file.name);
-          loadBook(file);
+          //conlog("Loading " + ext.toUpperCase() + ": " + file.name);
+          loadBook(file,i);
+        } else {
+          console.warn("..["+i+"] has invalid extension " + ext.toUpperCase() + ", skipped.");
         }
       }
     }
