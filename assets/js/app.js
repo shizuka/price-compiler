@@ -6,7 +6,6 @@
 //**** LOGGING ****//
 function conlog(msg) {
   document.getElementById('console').value += msg + '\n';
-  console.log("MSG: " + msg);
 }
 
 //**** ANGULAR ****//
@@ -37,22 +36,40 @@ function conlog(msg) {
   app.controller('PriceUpdateController', function() {
 
     console.info("Enterprise Price Update Compiler");
+    conlog("App loaded.");
 
   });
 })();
 
 //**** SHEETJS ****//
-
+var re = /(?:\.([^.]+))?$/;
 var bookfiles = [];
 var books = [];
+
+var rABS = true;
+function loadBook(f) {
+  var startTime = new Date();
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var data = e.target.result;
+    if(!rABS) data = new Uint8Array(data);
+    var workbook = XLSX.read(data, {type: rABS ? 'binary' : 'array'});
+    books.push(workbook);
+    //books.push(XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], {header:1}));
+    var endTime = new Date();
+    var timeDiff = (endTime - startTime);
+    console.log(f.name + " done in " + timeDiff + "ms");
+
+    //<--chain to heuristics here
+  };
+  if(rABS) reader.readAsBinaryString(f); else reader.readAsArrayBuffer(f);
+}
 
 function handleDrop(e) {
   console.log('File(s) dropped');
 
   e.preventDefault();
   e.stopPropagation();
-
-  var re = /(?:\.([^.]+))?$/;
 
   if (e.dataTransfer.items) {
     for (var i = 0; i < e.dataTransfer.items.length; i++) {
@@ -64,7 +81,7 @@ function handleDrop(e) {
         if (ext == "csv" || ext == "xlsx" || ext == "xls") {
           console.log("...valid extension, loading...");
           conlog("Loading " + ext.toUpperCase() + ": " + file.name);
-          bookfiles.push(file);
+          loadBook(file);
         }
       }
     }
