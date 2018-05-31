@@ -44,7 +44,7 @@ function conlog(msg) {
 
 //**** SHEETJS ****//
 var re = /(?:\.([^.]+))?$/;
-var bookfiles = [];
+var bookraws = [];
 var books = [];
 
 var rABS = true;
@@ -55,8 +55,12 @@ function loadBook(f,num) {
     var data = e.target.result;
     if(!rABS) data = new Uint8Array(data);
     var workbook = XLSX.read(data, {type: rABS ? 'binary' : 'array'});
-    books.push(workbook);
-    //books.push(XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], {header:1}));
+    bookraws.push(workbook); //FOR DEBUGGING
+    books.push({
+      name: f.name,
+      schema: "unknown",
+      sheet: XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], {header: 1, blankrows: false})
+    });
     var enLoad = new Date();
     conlog("Loaded " + re.exec(f.name)[1].toUpperCase() + " [" + f.name + "] in " + (enLoad - startTime) + "ms.");
 
