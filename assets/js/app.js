@@ -9,17 +9,27 @@
   });
 
   app.directive('selectOnClick', function() {
-    return function (scope, element, attrs) {
-      element.bind('click', function () {
+    return function (scope, elem, attrs) {
+      elem.bind('click', function () {
         this.select();
       });
     };
   });
 
+  app.directive('showTail', function () {
+    return function (scope, elem, attr) {
+      scope.$watch(function () {
+        return elem[0].value;
+      },
+      function (e) {
+        elem[0].scrollTop = elem[0].scrollHeight;
+      });
+    }
+  });
+
   app.controller('PriceUpdateController', function() {
 
-    console.log("Enterprise Price Update Compiler");
-    console.log("Initializing...");
+    console.info("Enterprise Price Update Compiler");
 
   });
 })();

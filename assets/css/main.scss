@@ -33,63 +33,151 @@ $md-gry-dark: #7f8c8d;
 $md-blk-lite: #34495e;
 $md-blk-dark: #2c3e50;
 
+$md-wht-dark: lighten($md-gry-lite, 50%);
+
 //**** USED COLORS ****//
 //backgrounds $cb
 $cb-body: $md-wht;
 $cb-header: $c-eganblue;
 $cb-drop: $md-gry-lite;
+$cb-drop-hover: darken($cb-drop, 10%);
 $cb-console: $md-blk-dark;
+$cb-actions: $md-gry-lite;
+$cb-heuristic: $md-wht-dark;
 
 //borders $cd
-$cd-drop: 2px dashed $md-gry-mid;
+$cd-drop: 3px dashed $md-blk-lite;
 
 //text $ct
 $ct-text: $md-blk-dark;
 $ct-title: $md-wht;
 $ct-console: $md-wht;
+$ct-drop: $md-wht-dark;
+$ct-dropsub: $md-gry-dark;
+$ct-heuristic: $md-blk-dark;
 
 //links $cl
 $cl-link: $md-blu-dark;
 $cl-hover: lighten($cl-link, 25%);
 
+//**** SIZES ****//
+$s-text: 14px;
+$s-h1: 24px;
+$s-h2: 18px;
+$s-h3: 16px;
+$s-title: $s-h1;
+$s-footer: 12px;
+$s-drop: 36px;
+
+//**** TEXT ****//
+h1 { font-size: $s-h1; }
+h2 { font-size: $s-h2; }
+h3 { font-size: $s-h3; }
+h1,h2,h3 {
+  &:not(:first-child) {
+    margin-top: 15px;
+  }
+  margin-bottom: 5px;
+}
+
 //**** PAGE BLOCKS ****//
 body {
   background-color: $cb-body;
+  font-size: $s-text;
 }
 
-#wrapper {
-  margin: 1.5em auto;
+.row {
+  margin-top: 0.5em;
+  padding: 1em;
 }
 
-#header {
+.header { //Title
   background-color: $cb-header;
   h1 {
     color: $ct-title;
+    font-size: $s-title;
   }
 }
 
-#drop {
-  background-color: $cb-drop;
-  border: $cd-drop;
+.inputs {
+  #drop { //DROP FILE HERE
+   background-color: $cb-drop;
+   border: $cd-drop;
+   color: $ct-drop;
+   font-weight: bold;
+   font-size: $s-drop;
+   text-align: center;
+   line-height: 1.25;
+   padding-top: 0.5em;
+   padding-bottom: 0.5em;
+
+   &:hover {
+     background-color: $cb-drop-hover;
+   }
+  } 
+
+  .dropsub {
+    color: $ct-dropsub;
+    text-align: center;
+  }
+
+  #heuristics { //list of found schemas
+    ul {
+      li {
+        background-color: $cb-heuristic;
+        color: $ct-heuristic;
+        margin-bottom: 10px;
+        padding: 5px;
+      }
+    }
+
+    .check {
+      font-weight: bold;
+    }
+
+    .source {
+      font-weight: bold;
+      color: $c-eganblue;
+      margin-left: 0.25em;
+      margin-right: 0.25em;
+    }
+
+    .filename {
+      font-family: 'Courier New', Courier, monospace;
+      color: $md-blk-lite;
+      background-color: darken($cb-heuristic, 5%);
+      padding: 0.25em 0.5em;
+      margin-left: 0.5em;
+    }
+  }
 }
 
-#heuristics {
+.actions { //START and progress
+  background-color: $cb-actions;
 
-}
-
-#action {
   .progress {
-    margin: 1em;
+    margin-top: 0.33rem;
+    margin-bottom: 0.25rem;
+  }
+  .progress-detail {
+    color: $md-blk-lite;
   }
 }
 
-#console {
+.console {
+  padding: 0;
+}
+
+#console { //textarea
   background-color: $cb-console;
   color: $ct-console;
-  padding: 0.5em;
-  
+  font-family: 'Courier New', Courier, monospace;
+  padding: 1em;
+  min-height: 15em;
+  width: 100%;
+  line-height: 1.25;
 }
 
-#download {
-
+.downloads {
+  background-color: $cb-actions;
 }

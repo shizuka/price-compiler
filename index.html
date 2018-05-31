@@ -13,78 +13,75 @@
     <link rel="stylesheet" href="assets/css/main.css">
 
     <title>Enterprise Item Update - Price Book Automation</title>
+
+    <style>
+      [ng\:cloak], [ng-cloak], [data-ng-cloak], [x-ng-cloak], .ng-cloak, .x-ng-cloak {
+        display: none !important;
+      }
+    </style>
   </head>
   <body>
     <div id="wrapper" class="container" ng-controller="PriceUpdateController as compiler" class="ng-scope">
-      <div id="header" class="row justify-content-between">
-        <div class="col">
-          <h1>Enterprise &ndash; Price Update Automation</h1>
-        </div>
-        <div id="drop" class="col-2">
-          DROP FILE HERE
-        </div>
+      
+      <div class="header row">
+        <div class="col"><h1 class="title">Enterprise Price Update Compiler</h1></div>
       </div>
 
-      <div id="heuristics" class="container">
-        <h2>Heuristics</h2>
-        <ul id="found" class="list-unstyled">
-          <li>[&checkmark;] Found Graybar-Dayna</li>
-          <li>[&checkmark;] Found Graybar-Dan</li>
-          <li>[&checkmark;] Found Werner</li>
-        </ul>
-      </div>
-
-      <div id="action" class="container">
-        <h2>Compile Price Books</h2>
-        <div class="row justify-content-between">
-              <button type="button" class="btn btn-primary col-1">START</button>
-          <div class="progress col">
-            <div id="progress" class="progress-bar bg-success" style="width: 50%"></div>
+      <div class="inputs row">
+        <div class="col-2">
+          <div id="drop">DROP HERE</div>
+          <div>
+            <button id="choose" class="btn btn-block btn-sm btn-secondary">..or choose file</button>
           </div>
         </div>
+        <div id="heuristics" class="col">
+            <h2>Input Price Files</h2>
+            <p id="howto">Upload CSV or XLSX files to begin</p>
+            <ul id="found" class="list-unstyled">
+                <li><span class="check">[&checkmark;]</span> Found <span class="source">Graybar Dayna</span> in file <span class="filename">EGAN COMPANY ACCUBID mmddyyyy.csv</span></li>
+                <li><span class="check">[&checkmark;]</span> Found <span class="source">Graybar Dan</span> in file <span class="filename">ACCUBID m-d-yy.xlsx</span></li>
+            </ul>
+        </div>
       </div>
 
-      <div class="container">
-        <h2>Console</h2>
-        <pre id="console" class="pre-scrollable">
-LOADING: EGAN COMPANY ACCUBID 20180516.csv
-FOUND: Graybar-Dayna - confidence 3/3
-LOAD: ACCUBID 18-05-16.xlsx
-FOUND: Graybar-Dan - confidence 3/3
-LOAD: some weird.xlsx
-ERROR: File doesn't match known heuristics
--------
-STARTING COMPILATION
-FIXING DAYNA COUNTS --- count > unit --- List Price --- Net Price
-00000000000 - description --- 15CT > C --- $oldlist > $newlist --- $oldnet > $newnet
-00000000000 - description --- 15CT > C --- $oldlist > $newlist --- $oldnet > $newnet
-00000000000 - description --- 15CT > C --- $oldlist > $newlist --- $oldnet > $newnet
-FIXING DAN LINES
-00000000000 - galv thing --- 1 > 10
-Merging lists... done.
-DEDUPLICATING LIST
-00000000000 --- found X times --- $price $price $price $price --- using Graybar-Dan $price
-00000000000 --- found X times --- $price $price $price $price --- using Graybar-Dan $price
-00000000000 --- found X times --- $price $price $price $price --- using Graybar-Dan $price
-00000000000 --- found X times --- $price $price $price $price --- using Graybar-Dan $price
-00000000000 --- found X times --- $price $price $price $price --- using Graybar-Dan $price
-00000000000 --- found X times --- $price $price $price $price --- using Graybar-Dan $price
--------
-FINISHED COMPILATION in 00:00s
-        </pre>
+      <div class="actions row">
+        <div class="col-2">
+          <button id="start" type="button" class="btn btn-block btn-primary" disabled>Start</button>
+        </div>
+        <div class="col">
+          <div class="progress" style="height: 0.5rem">
+            <div id="progress" class="progress-bar" style="width: 33%"></div>
+          </div>
+          <div class="progress-detail">status bar</div>
+        </div>
       </div>
 
-      <div id="download" class="container">
-        <h2>Download Combined File</h2>
-        <button type="button" class="btn btn-success">Dayna Dan Combined yyyymmdd.csv</button>
+      <div class="console row">
+        <textarea readonly show-tail name="console" id="console">Console Output
+Waiting for files...
+Press Start to clean and merge...
+Cleaning Dayna...
+Cleaning Dan...
+Merging...
+Identifying unique UPCs...
+Deduplicating...
+Finished in 00:00s
+        </textarea>
+      </div>
+
+      <div class="downloads row">
+        <div class="col-2">
+          <button id="download" class="btn btn-block btn-success" disabled>Download</button>
+        </div>
+        <div class="filename col d-flex align-items-center">Dayna Dan Combined 20180531.csv</div>
       </div>
 
     </div>
     <!-- Scripts -->
     <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.12.13/xlsx.full.min.js"></script>
     <script src="assets/js/angular.min.js"></script>
     <script src="assets/js/app.js"></script>
     <script src="assets/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.12.13/xlsx.full.min.js"></script>
   </body>
 </html>
