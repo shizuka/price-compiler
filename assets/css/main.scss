@@ -107,13 +107,9 @@ body {
    font-weight: bold;
    font-size: $s-drop;
    text-align: center;
-   line-height: 1.25;
+   line-height: 1.5;
    padding-top: 0.5em;
    padding-bottom: 0.5em;
-
-   &:hover {
-     background-color: $cb-drop-hover;
-   }
   } 
 
   .dropsub {

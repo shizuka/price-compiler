@@ -1,6 +1,7 @@
 # Egan Price Update Automation
 
 _pdf/*
+_tests/*
 assets/css/main.css
 assets/css/main.css.map
 assets/css/helpers.css
