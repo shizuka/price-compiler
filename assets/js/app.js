@@ -3,11 +3,16 @@
  * Jessica Hart
  */
 
-//**** LOGGING ****//
+//**** GLOBALS ****//
 function conlog(msg) {
-  document.getElementById('console').value += msg + '\n';
-  console.log(msg);
+  var con = document.getElementById('console');
+  con.value += msg + '\n';
+  con.scrollTop = con.scrollHeight;
+  console.log("> " + msg);
 }
+
+var bookraws = []; //XLSX format
+var books = []; //just the sheets in foo[row][col] format
 
 //**** ANGULAR ****//
 (function() {
@@ -43,48 +48,49 @@ function conlog(msg) {
 })();
 
 //**** SHEETJS ****//
-var re = /(?:\.([^.]+))?$/;
-var bookraws = [];
-var books = [];
-
+//(function() {
 var rABS = true;
-function loadBook(f,num) {
-  var startTime = new Date();
+var reExtension = /(?:\.([^.]+))?$/; //regex to find extension
+
+function loadBook(f) {
+  var stLoad = new Date();
   var reader = new FileReader();
   reader.onload = function(e) {
     var data = e.target.result;
     if(!rABS) data = new Uint8Array(data);
     var workbook = XLSX.read(data, {type: rABS ? 'binary' : 'array'});
-    bookraws.push(workbook); //FOR DEBUGGING
+    bookraws.push(workbook); //FOR DEBUGGING LATER
     books.push({
       name: f.name,
       schema: "unknown",
       sheet: XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], {header: 1, blankrows: false})
     });
     var enLoad = new Date();
-    conlog("Loaded " + re.exec(f.name)[1].toUpperCase() + " [" + f.name + "] in " + (enLoad - startTime) + "ms.");
+    conlog("Read " + reExtension.exec(f.name)[1].toUpperCase() + " [" + f.name + "] in " + (enLoad - stLoad) + "ms.");
 
     //<--chain to heuristics here
   };
   if(rABS) reader.readAsBinaryString(f); else reader.readAsArrayBuffer(f);
 }
 
+var dropzone = document.getElementById("wrapper");
 function handleDrop(e) {
-  console.log('File(s) dropped');
-
   e.preventDefault();
   e.stopPropagation();
 
   if (e.dataTransfer.items) {
+    if (e.dataTransfer.items.length > 1) {
+      console.log("Incoming items (" + e.dataTransfer.items.length + ")...");
+    } else {
+      console.log("Incoming item...");
+    }
     for (var i = 0; i < e.dataTransfer.items.length; i++) {
-      //if not a file, ignore
       if (e.dataTransfer.items[i].kind === 'file') {
         var file = e.dataTransfer.items[i].getAsFile();
         console.log("...["+i+"] " + file.name);
-        var ext = re.exec(file.name)[1];
+        var ext = reExtension.exec(file.name)[1];
         if (ext == "csv" || ext == "xlsx" || ext == "xls") {
-          //conlog("Loading " + ext.toUpperCase() + ": " + file.name);
-          loadBook(file,i);
+          loadBook(file);
         } else {
           console.warn("..["+i+"] has invalid extension " + ext.toUpperCase() + ", skipped.");
         }
@@ -93,8 +99,9 @@ function handleDrop(e) {
   }
 }
 function handleDragover(e) {
-  e.preventDefault();
+  e.preventDefault(); //keep chrome from trying to download files instead of loading
 }
-var dropzone = document.getElementById("drop");
+
 dropzone.addEventListener('drop', handleDrop, false);
 dropzone.addEventListener('dragover', handleDragover, false);
+//})();
