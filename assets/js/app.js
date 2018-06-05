@@ -60,10 +60,17 @@ function loadBook(f) {
     if(!rABS) data = new Uint8Array(data);
     var workbook = XLSX.read(data, {type: rABS ? 'binary' : 'array'});
     bookraws.push(workbook); //FOR DEBUGGING LATER
+    var worksheet = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], {header: 1, blankrows: false, raw: true});
+    for (var i = 0; i < worksheet.length; i++) {
+      for (var j = 0; j < i.length; j++) {
+        if (worksheet[i][j] == null) { worksheet[i][j] = ""; }
+        worksheet[i][j].toString().replace(/,?\s/, '');
+      }
+    }
     books.push({
       name: f.name,
       schema: "unknown",
-      sheet: XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], {header: 1, blankrows: false})
+      sheet: worksheet
     });
     var enLoad = new Date();
     conlog("Read " + reExtension.exec(f.name)[1].toUpperCase() + " [" + f.name + "] in " + (enLoad - stLoad) + "ms.");

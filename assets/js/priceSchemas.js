@@ -3,22 +3,11 @@
  * Jessica Hart - 2018-06-01
  */
 
-export default {
-  default: {
-    fix: function (col) {
-      //De-zero List Price (3) and Net Price (11)
-      if (col[3] == 0)  { col[3] = col[11] };
-      if (col[11] == 0) { col[11] = col[3] };
-      //Truncate Catalogue Number (6) at 29 chars
-      col[6] = col[6].substring(0,29);
-      return col;
-    }
-  },
-
+var priceFormats = {
   GraybarDayna: {
     // Dayna Asche - everything
     // NOTE: Dayna's is the standard grid format we send to Item Update
-    print: "Graybar - Dayna",
+    printname: "Graybar - Dayna",
     filename: /EGAN COMPANY ACCUBID \d{2}\d{2}\d{4}\.csv/,
     headers: [
       "Price Update Description",
@@ -80,7 +69,7 @@ export default {
 
   GraybarDan: {
     //Dan Pritchard - pipe and wire
-    print: "Graybar - Dan",
+    printname: "Graybar - Dan",
     filename: /ACCUBID \d{1,2}-\d{1,2}-\d{2}\.xlsx/,
     headers: [
       "Alternate Description",
@@ -95,54 +84,59 @@ export default {
       "EAN/UPC",      //UPC
       "Net price"
     ],
-    fix: function (col) {
+    fix: function (row) {
+      var col = row.map(String);
+
       //Format date and add 1
-      col[1] = ( parseInt((new Date(col[1])) //1 Document Date
+      col[1] = ( parseInt((new Date((col[1] - (25567 + 1))*86400*1000)) //1 Document Date
         .toLocaleString('en-us', {year: 'numeric', month: '2-digit', day: '2-digit'})
-        .replace(/(\d+)\/(\d+)\/(\d+)/, '$3$1$2'))
-         + 1)
+        .replace(/(\d+)\/(\d+)\/(\d+)/, '$3$1$2')) + 1)
          .toString();
       //This item appears a few times as x1, priced as x10, needs to be x100
-      if (col[0].indexOf("SS GALV CONDUIT W/COUP 10FT TYPE 304")) {
+      if (col[0].includes("SS GALV CONDUIT W/COUP 10FT TYPE 304")) {
         col[2] = 100;   //2  Pricing unit
         col[10] *= 10;  //10 Net Price
       }
       //Convert price units from numeric to ECM
-      if (col[2] == 1) {
+      if (col[2] == "1") {
         col[2] = "E";
-      } else if (col[2] == 100) {
+      } else if (col[2] == "100") {
         col[2] = "C";
-      } else if (col[2] == 1000) {
+      } else if (col[2] == "1000") {
         col[2] = "M";
+      }
+
+      if (col[9] == undefined) {
+        col[9] = col[7];
       }
 
       //Convert to standard format (Dayna)
       return [
-        col[0],   //Description
-        col[1],   //Date
-        col[2],   //Unit
-        col[3],   //List Price
-        col[4],   //Price Code
-        col[5],   //Manufacturer Name <- Vendor Name
-        col[6],   //Catalog Number <- Description
-        col[7],   //Ref Number <- Material
-        col[8],   //Supplier Name
-        (col[9] == "" ? col[7]:col[9]), //Supplier Code (DB Vendor Code) <- EAN/UPC or Material if blank
-        null,     //Discount
-        col[10],  //Net Price
-        null,     //Comments
-        null,     //Col 1 Price
-        null,     //Col 2 Price
-        col[10],  //Col 3 Price <- Net Price
-        null,     //Resale Price
-        null,     //New Price Code
-        null,     //New Description
-        null,     //New Mfr Name
-        null,     //New Cat Num
-        null,     //New Ref Num
-        null,     //New Supplier Name
-        null,     //New Supplier Code (New Vendor Code)
-        "A3"      //Item Status
+        col[0],  //Description
+        col[1],  //Date
+        col[2],  //Unit
+        col[3],  //List Price
+        col[4],  //Price Code
+        col[5],  //Manufacturer Name <- Vendor Name
+        col[6],  //Catalog Number <- Description
+        col[7],  //Ref Number <- Material
+        col[8],  //Supplier Name
+        col[9],  //Supplier Code (DB Vendor Code) <- EAN/UPC or Material if blank
+        "",      //Discount
+        col[10], //Net Price
+        "",      //Comments
+        "",      //Col 1 Price
+        "",      //Col 2 Price
+        col[10], //Col 3 Price <- Net Price
+        "",      //Resale Price
+        "",      //New Price Code
+        "",      //New Description
+        "",      //New Mfr Name
+        "",      //New Cat Num
+        "",      //New Ref Num
+        "",      //New Supplier Name
+        "",      //New Supplier Code (New Vendor Code)
+        "A3"     //Item Status
       ];
     }
   }
