@@ -73,7 +73,11 @@ var priceFormats = {
       };
 
       col[15] = col[11];  //Col 3 Price == Net Price
-      
+
+      //De-zero and truncate catalog number
+      col[6] = col[6].substring(0,29);
+      if (col[3] == 0) { col[3] = col[11] }
+      if (col[11] == 0) { col[11] = col[3] }
       return col;
     }
   },
@@ -125,6 +129,10 @@ var priceFormats = {
         col[9] = col[7];
       }
 
+      //De-zero and truncate catalog number
+      col[6] = col[6].substring(0,29);
+      if (col[3] == 0) { col[3] = col[10] }
+      if (col[10] == 0) { col[10] = col[3] }
       //Convert to standard format (Dayna)
       return [
         col[0],  //Description

@@ -58,7 +58,7 @@ function loadBook(f) {
   reader.onload = function(e) {
     var data = e.target.result;
     if(!rABS) data = new Uint8Array(data);
-    var workbook = XLSX.read(data, {type: rABS ? 'binary' : 'array'});
+    var workbook = XLSX.read(data, {type: rABS ? 'binary' : 'array', raw: true});
     bookraws.push(workbook); //FOR DEBUGGING LATER
     var worksheet = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], {header: 1, blankrows: false, raw: true});
     for (var i = 0; i < worksheet.length; i++) {
