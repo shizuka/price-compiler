@@ -64,7 +64,7 @@ function loadBook(f) {
     for (var i = 0; i < worksheet.length; i++) {
       for (var j = 0; j < i.length; j++) {
         if (worksheet[i][j] == null) { worksheet[i][j] = ""; }
-        worksheet[i][j].toString().replace(/,?\s/, '');
+        worksheet[i][j] = worksheet[i][j].toString().replace(/,/g, '');
       }
     }
     books.push({
