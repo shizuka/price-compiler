@@ -70,9 +70,10 @@ var priceFormats = {
         };
         col[3] = col[3].toFixed(2);
         col[11] = col[11].toFixed(2);
-        col[15] = col[11];  //Col 3 Price == Net Price
       };
-      //no other fixes needed
+
+      col[15] = col[11];  //Col 3 Price == Net Price
+      
       return col;
     }
   },
