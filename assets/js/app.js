@@ -52,6 +52,18 @@ var books = []; //just the sheets in foo[row][col] format
 var rABS = true;
 var reExtension = /(?:\.([^.]+))?$/; //regex to find extension
 
+function detectFormat(fn, sht) {
+  for (var f = 0; f < priceFormats.length; f++) {
+    var fnmatch = (priceFormats[f].filename.exec(fn) != null);
+    var headmatch = (JSON.stringify(priceFormats[f].headers) == JSON.stringify(sht[0]));
+    if (fnmatch && headmatch) {
+      console.log("...matched " + priceFormats[f].printname);
+      return f;
+    }
+  }
+  return null;
+}
+
 function loadBook(f) {
   var stLoad = new Date();
   var reader = new FileReader();
@@ -67,15 +79,26 @@ function loadBook(f) {
         worksheet[i][j] = worksheet[i][j].toString().replace(/,/g, '');
       }
     }
-    books.push({
-      name: f.name,
-      schema: "unknown",
-      sheet: worksheet
-    });
-    var enLoad = new Date();
-    conlog("Read " + reExtension.exec(f.name)[1].toUpperCase() + " [" + f.name + "] in " + (enLoad - stLoad) + "ms.");
 
-    //<--chain to heuristics here
+    var format = detectFormat(f.name, worksheet);
+
+    var enLoad = new Date();
+    if (format == null) {
+      conlog("...file [ " + f.name + " ] does not match any known schema.");
+    } else {
+      for (var book of books) {
+        if (book.format == format) {
+          conlog("...already have a " + priceFormats[format].printname);
+          return;
+        }
+      }
+      books.push({
+        name: f.name,
+        format: format,
+        sheet: worksheet
+      });
+      conlog("...read [ " + f.name + " ][" + priceFormats[format].printname + "] in " + (enLoad - stLoad) + "ms.");
+    }
   };
   if(rABS) reader.readAsBinaryString(f); else reader.readAsArrayBuffer(f);
 }
@@ -86,11 +109,7 @@ function handleDrop(e) {
   e.stopPropagation();
 
   if (e.dataTransfer.items) {
-    if (e.dataTransfer.items.length > 1) {
-      console.log("Incoming items (" + e.dataTransfer.items.length + ")...");
-    } else {
-      console.log("Incoming item...");
-    }
+    conlog("Reading files...");
     for (var i = 0; i < e.dataTransfer.items.length; i++) {
       if (e.dataTransfer.items[i].kind === 'file') {
         var file = e.dataTransfer.items[i].getAsFile();

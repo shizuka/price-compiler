@@ -3,12 +3,12 @@
  * Jessica Hart - 2018-06-01
  */
 
-var priceFormats = {
-  GraybarDayna: {
+var priceFormats = [
+  {
     // Dayna Asche - everything
     // NOTE: Dayna's is the standard grid format we send to Item Update
-    printname: "Graybar - Dayna",
-    filename: /EGAN COMPANY ACCUBID \d{2}\d{2}\d{4}\.csv/,
+    printname: "Graybar-Dayna",
+    filename: /EGAN COMPANY ACCUBID \d{2}\d{2}\d{4}\.csv/i,
     headers: [
       "Price Update Description",     //  0
       "Price Date",                   //  1
@@ -82,10 +82,10 @@ var priceFormats = {
     }
   },
 
-  GraybarDan: {
+  {
     //Dan Pritchard - pipe and wire
-    printname: "Graybar - Dan",
-    filename: /ACCUBID \d{1,2}-\d{1,2}-\d{2}\.xlsx/,
+    printname: "Graybar-Dan",
+    filename: /ACCUBID \d{1,2}-\d{1,2}-\d{2}\.xlsx/i,
     headers: [
       "Alternate Description",
       "Document Date",
@@ -164,4 +164,4 @@ var priceFormats = {
     }
   }
   //other schemas
-};
+];
