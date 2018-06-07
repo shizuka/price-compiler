@@ -13,6 +13,11 @@ function conlog(msg) {
 
 var bookraws = []; //XLSX format
 var books = []; //just the sheets in foo[row][col] format
+var progbar = document.getElementById('progress');
+function setProgress(lvl, max) {
+  progbar.setAttribute('style', 'width: ' + (lvl/max*100) + '%');
+}
+function setProgStatus(msg) { document.getElementById('progdet').textContent = msg; }
 
 //**** ANGULAR ****//
 (function() {
@@ -42,6 +47,8 @@ var books = []; //just the sheets in foo[row][col] format
   app.controller('PriceUpdateController', function() {
 
     console.info("Enterprise Price Update Compiler");
+    setProgress(0,1);
+    setProgStatus("Drag and drop files...");
     conlog("App loaded.");
 
   });
@@ -51,6 +58,8 @@ var books = []; //just the sheets in foo[row][col] format
 //(function() {
 var rABS = true;
 var reExtension = /(?:\.([^.]+))?$/; //regex to find extension
+var filestoload = 0;
+var filesloaded = 0;
 
 function detectFormat(fn, sht) {
   for (var f = 0; f < priceFormats.length; f++) {
@@ -62,6 +71,17 @@ function detectFormat(fn, sht) {
     }
   }
   return null;
+}
+
+function updateLoadProgress() {
+  filesloaded++;
+  if (filesloaded < filestoload) {
+    //setProgress(filesloaded,filestoload,true);
+    setProgStatus("Loading files...");
+  } else {
+    setProgStatus("Ready.");
+    setProgress(0,1);
+  }
 }
 
 function loadBook(f) {
@@ -84,12 +104,13 @@ function loadBook(f) {
 
     var enLoad = new Date();
     if (format == null) {
-      conlog("...file [ " + f.name + " ] does not match any known schema.");
+      conlog("...file [ " + f.name + " ] does not match any known schema, skipped.");
     } else {
       for (var book of books) {
         if (book.format == format) {
           conlog("...already have a " + priceFormats[format].printname);
-          return;
+          updateLoadProgress();
+          break;
         }
       }
       books.push({
@@ -97,8 +118,9 @@ function loadBook(f) {
         format: format,
         sheet: worksheet
       });
-      conlog("...read [ " + f.name + " ][" + priceFormats[format].printname + "] in " + (enLoad - stLoad) + "ms.");
+      conlog("...got [ " + f.name + " ][" + priceFormats[format].printname + "] in " + (enLoad - stLoad) + "ms.");
     }
+    updateLoadProgress();
   };
   if(rABS) reader.readAsBinaryString(f); else reader.readAsArrayBuffer(f);
 }
@@ -109,7 +131,10 @@ function handleDrop(e) {
   e.stopPropagation();
 
   if (e.dataTransfer.items) {
-    conlog("Reading files...");
+    filestoload = e.dataTransfer.items.length;
+    filesloaded = 0;
+    setProgStatus("Loading files...");
+    setProgress(1,1);
     for (var i = 0; i < e.dataTransfer.items.length; i++) {
       if (e.dataTransfer.items[i].kind === 'file') {
         var file = e.dataTransfer.items[i].getAsFile();
@@ -118,6 +143,7 @@ function handleDrop(e) {
         if (ext == "csv" || ext == "xlsx" || ext == "xls") {
           loadBook(file);
         } else {
+          filestoload--;
           console.warn("..["+i+"] has invalid extension " + ext.toUpperCase() + ", skipped.");
         }
       }

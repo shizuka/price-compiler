@@ -35,8 +35,7 @@
             <h2>Input Price Files</h2>
             <p id="howto">Upload CSV or XLSX files to begin</p>
             <ul id="found" class="list-unstyled">
-                <li><span class="check">[&checkmark;]</span> Found <span class="source">Graybar Dayna</span> in file <span class="filename">EGAN COMPANY ACCUBID mmddyyyy.csv</span></li>
-                <li><span class="check">[&checkmark;]</span> Found <span class="source">Graybar Dan</span> in file <span class="filename">ACCUBID m-d-yy.xlsx</span></li>
+                <li ng-repeat="book in books"><span class="check">[&checkmark;]</span> Found <span class="source">Graybar Dayna</span> in file <span class="filename">EGAN COMPANY ACCUBID mmddyyyy.csv</span></li>
             </ul>
         </div>
       </div>
@@ -47,9 +46,9 @@
         </div>
         <div class="col">
           <div class="progress" style="height: 0.5rem">
-            <div id="progress" class="progress-bar" style="width: 33%"></div>
+            <div id="progress" class="progress-bar progress-bar-striped"></div>
           </div>
-          <div class="progress-detail">status bar</div>
+          <div id="progdet" class="progress-detail"></div>
         </div>
       </div>
 
