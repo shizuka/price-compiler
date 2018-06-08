@@ -60,9 +60,9 @@
         <textarea readonly show-tail name="console" id="console"></textarea>
       </div>
 
-      <div class="downloads row">
+      <div class="downloads row" ng-show="ctrl.showDownload">
         <div class="col-2">
-          <button id="download" class="btn btn-block btn-success" ng-show="ctrl.enableDownload">Download</button>
+          <button id="download" class="btn btn-block btn-success">Download</button>
         </div>
         <div class="filename col d-flex align-items-center">Dayna Dan Combined 20180531.csv</div>
       </div>

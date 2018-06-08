@@ -128,7 +128,8 @@ var priceFormats = [
         col[2] = "M";
       }
 
-      if (col[9] == undefined) {
+      //If 9-UPC is blank, use 7-Material
+      if (col[9] == "") {
         col[9] = col[7];
       }
 

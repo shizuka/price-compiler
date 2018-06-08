@@ -147,8 +147,6 @@ function setStart(state) {
       if(rABS) reader.readAsBinaryString(f); else reader.readAsArrayBuffer(f);
     }
 
-    var dropzone = document.getElementById("wrapper");
-
     var handleDrop = function (e) {
       e.preventDefault();
       e.stopPropagation();
@@ -179,14 +177,15 @@ function setStart(state) {
       e.preventDefault(); //keep chrome from trying to download files instead of loading
     }
 
-    dropzone.addEventListener('drop', handleDrop, false);
-    dropzone.addEventListener('dragover', handleDragover, false);
+    window.addEventListener('drop', handleDrop, false);
+    window.addEventListener('dragover', handleDragover, false);
 
     //**** COMPILER ****//
     this.startCompile = function () {
       setStart(2);
+      hideHowto = true;
       setProgStatus("Starting compile...");
-      conlog("Starting compile...");
+      conlog("Compiling...");
       var sheetlen = 0;
       for (var i = 0; i < vm.books.length; i++) {
         sheetlen += vm.books[i].sheet.length - 1; //-1 to skip headers
@@ -219,10 +218,10 @@ function setStart(state) {
       setProgStatus("Identifying uniques...");
       conlog("[2] Identifying uniques...");
       var sUniq = new Date();
-      for (var ri = 0; r < this.rowsfixed.length; ri++) {
-        var r = this.rowsfixed[r];
+      for (var ri = 0; ri < this.rowsfixed.length; ri++) {
+        var r = this.rowsfixed[ri];
         var upc = r[9]; //9 Vendor Code
-        if (upc in this.uniqueUPCs) {
+        if (this.uniqueUPCs[upc]) {
           this.uniqueUPCs[upc].push(r);
         } else {
           this.uniqueUPCs[upc] = [r];
@@ -231,11 +230,15 @@ function setStart(state) {
         setProgress(pn,pt);
       }
       var eUniq = new Date();
-      var uniq = this.uniqueUPCs.length;
+      var uniq = Object.keys(this.uniqueUPCs).length;
       conlog("[2] Identified " + uniq + " in " + (eUniq - sUniq) + "ms.");
       pt = sheetlen * 2 + uniq;
       setProgress(pn, pt);
       //** STEP 3 - DEDUPLICATE **//
+      conlog("[3] Deduplicating...");
+      var eTotal = new Date();
+      conlog("[ ] Finished compilation in " + (eTotal - sTotal) + "ms.");
+      conlog("Ready to download.");
     }
 
     conlog("App loaded.");
