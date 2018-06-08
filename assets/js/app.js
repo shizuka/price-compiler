@@ -16,6 +16,19 @@ function setProgress(lvl, max) {
   progbar.setAttribute('style', 'width: ' + (lvl/max*100) + '%');
 }
 function setProgStatus(msg) { document.getElementById('progdet').textContent = msg; }
+function setStart(state) {
+  var start = document.getElementById('start');
+  if (state == 1) {
+    start.disabled = false;
+    start.classList.add('btn-success');
+  } else if (state == 0) {
+    start.disabled = true;
+  } else {
+    start.classList.add('btn-outline-success');
+    start.classList.remove('btn-success');
+    start.disabled = true;
+  }
+}
 
 //**** ANGULAR ****//
 (function() {
@@ -58,6 +71,7 @@ function setProgStatus(msg) { document.getElementById('progdet').textContent = m
     this.books = [];      // [ {filename, format, sheet, ... } , ... ]
     this.rowsfixed = [];  // [ [desc, date, unit, ...] , ... ]
     this.hideHowto = false;
+    this.showDownload = false;
 
     var detectFormat = function (fn, sht) {
       for (var f = 0; f < priceFormats.length; f++) {
@@ -76,10 +90,13 @@ function setProgStatus(msg) { document.getElementById('progdet').textContent = m
       if (filesloaded < filestoload) {
         //setProgress(filesloaded,filestoload,true);
         setProgStatus("Loading files...");
+        setStart(0);
       } else {
         setProgStatus("Ready.");
         setProgress(0,1);
+        setStart(1);
       }
+      $scope.$apply();
     }
 
     var loadBook = function (f) {
@@ -137,6 +154,8 @@ function setProgStatus(msg) { document.getElementById('progdet').textContent = m
         filesloaded = 0;
         setProgStatus("Loading files...");
         setProgress(1,1);
+        document.getElementById('start').classList.remove('btn-outline-light');
+        setStart(0);
         for (var i = 0; i < e.dataTransfer.items.length; i++) {
           if (e.dataTransfer.items[i].kind === 'file') {
             var file = e.dataTransfer.items[i].getAsFile();
@@ -160,7 +179,9 @@ function setProgStatus(msg) { document.getElementById('progdet').textContent = m
     dropzone.addEventListener('dragover', handleDragover, false);
 
     this.startCompile = function () {
-
+      setStart(2);
+      setProgStatus("Starting compile...");
+      conlog("Starting compile...");
     }
 
     conlog("App loaded.");

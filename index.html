@@ -46,7 +46,7 @@
 
       <div class="actions row">
         <div class="col-2">
-          <button id="start" type="button" class="btn btn-block btn-primary" disabled>Start</button>
+          <button id="start" type="button" class="btn btn-block btn-outline-light" disabled ng-click="ctrl.startCompile()">Start</button>
         </div>
         <div class="col">
           <div class="progress" style="height: 0.5rem">
@@ -62,7 +62,7 @@
 
       <div class="downloads row">
         <div class="col-2">
-          <button id="download" class="btn btn-block btn-success" disabled>Download</button>
+          <button id="download" class="btn btn-block btn-success" ng-show="ctrl.enableDownload">Download</button>
         </div>
         <div class="filename col d-flex align-items-center">Dayna Dan Combined 20180531.csv</div>
       </div>
