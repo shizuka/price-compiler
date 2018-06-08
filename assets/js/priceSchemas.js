@@ -70,6 +70,7 @@ var priceFormats = [
         };
         col[3] = col[3].toFixed(2);
         col[11] = col[11].toFixed(2);
+        conlog(col[7] + ": " + col[0] + " -- was E -- now " + col[2]);
       };
 
       col[15] = col[11];  //Col 3 Price == Net Price
@@ -113,8 +114,10 @@ var priceFormats = [
          .toString();
       //This item appears a few times as x1, priced as x10, needs to be x100
       if (col[0].includes("SS GALV CONDUIT W/COUP 10FT TYPE 304")) {
-        col[2] = 100;   //2  Pricing unit
+        col[2] = "100";   //2  Pricing unit
         col[10] *= 10;  //10 Net Price
+        conlog((col[9]?col[9]:col[7]) + ": " + col[0]);
+        col[10].toFixed(2).toString();
       }
       //Convert price units from numeric to ECM
       if (col[2] == "1") {

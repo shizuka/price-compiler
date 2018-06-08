@@ -69,7 +69,11 @@ function setStart(state) {
     var filesloaded = 0;
 
     this.books = [];      // [ {filename, format, sheet, ... } , ... ]
-    this.rowsfixed = [];  // [ [desc, date, unit, ...] , ... ]
+
+    this.rowsfixed = [];  // [ [cols] , ... ]
+    this.uniqueUPCs = []; // { UPC: [row] , ... }
+    this.finalOutput = [];// [ [cols] , ... ]
+
     this.hideHowto = false;
     this.showDownload = false;
 
@@ -178,10 +182,60 @@ function setStart(state) {
     dropzone.addEventListener('drop', handleDrop, false);
     dropzone.addEventListener('dragover', handleDragover, false);
 
+    //**** COMPILER ****//
     this.startCompile = function () {
       setStart(2);
       setProgStatus("Starting compile...");
       conlog("Starting compile...");
+      var sheetlen = 0;
+      for (var i = 0; i < vm.books.length; i++) {
+        sheetlen += vm.books[i].sheet.length - 1; //-1 to skip headers
+      }
+      var pn = 0; //progress now
+      var pt = sheetlen * 3; //progress total
+      setProgress(pn,pt);
+      conlog("...total lines to process: " + pt + ".");
+      var sTotal = new Date();
+
+      //** STEP 1 - FORMAT FIXES **//
+      var sFixes = new Date();
+      for (var bi = 0; bi < this.books.length; bi++) {
+        var b = this.books[bi];
+        var sFix = new Date();
+        conlog("[1] Fixing " + b.formatname + "...");
+        setProgStatus("Fixing " + b.formatname + "...");
+        for (var ri = 1; ri < b.sheet.length; ri++) { //ri = 1, to skip headers
+          this.rowsfixed.push(priceFormats[b.format].fix(b.sheet[ri]));
+          pn++;
+          setProgress(pn,pt);
+        }
+        var eFix = new Date();
+        conlog("[1] Fixed " + b.formatname + " in " + (eFix - sFix) + "ms.");
+      }
+      var eFixes = new Date();
+      conlog("[1] Fixed all items in " + (eFixes - sFixes) + "ms.");
+      
+      //** STEP 2 - IDENTIFY UNIQUES **//
+      setProgStatus("Identifying uniques...");
+      conlog("[2] Identifying uniques...");
+      var sUniq = new Date();
+      for (var ri = 0; r < this.rowsfixed.length; ri++) {
+        var r = this.rowsfixed[r];
+        var upc = r[9]; //9 Vendor Code
+        if (upc in this.uniqueUPCs) {
+          this.uniqueUPCs[upc].push(r);
+        } else {
+          this.uniqueUPCs[upc] = [r];
+        }
+        pn++;
+        setProgress(pn,pt);
+      }
+      var eUniq = new Date();
+      var uniq = this.uniqueUPCs.length;
+      conlog("[2] Identified " + uniq + " in " + (eUniq - sUniq) + "ms.");
+      pt = sheetlen * 2 + uniq;
+      setProgress(pn, pt);
+      //** STEP 3 - DEDUPLICATE **//
     }
 
     conlog("App loaded.");
