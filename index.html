@@ -21,7 +21,7 @@
     </style>
   </head>
   <body>
-    <div id="wrapper" class="container" ng-controller="PriceUpdateController as compiler" class="ng-scope">
+    <div id="wrapper" class="container" ng-controller="PriceUpdateController as ctrl" class="ng-scope">
       
       <div class="header row">
         <div class="col"><h1 class="title">Enterprise Price Update Compiler</h1></div>
@@ -33,9 +33,13 @@
         </div>
         <div id="heuristics" class="col">
             <h2>Input Price Files</h2>
-            <p id="howto">Upload CSV or XLSX files to begin</p>
+            <p id="howto" ng-hide="ctrl.hideHowto">Upload CSV or XLSX files to begin</p>
             <ul id="found" class="list-unstyled">
-                <li ng-repeat="book in books"><span class="check">[&checkmark;]</span> Found <span class="source">Graybar Dayna</span> in file <span class="filename">EGAN COMPANY ACCUBID mmddyyyy.csv</span></li>
+                <li ng-repeat="book in ctrl.books">
+                  <span class="check">[&checkmark;]</span>
+                  Found <span class="source" ng-bind="book.formatname">fmt</span>
+                  in file <span class="filename" ng-bind="book.name">fn</span>
+                </li>
             </ul>
         </div>
       </div>
