@@ -4,10 +4,30 @@
  */
 
 var priceFormats = [
+
+  /*
+  {
+    printname: "Foo", //friendly print name
+    priority: 0, //higher = better
+    filename: /regex/i, //pattern match
+    headers: ["Description", "Date", "Unit", ...],
+    fix(row, linenum) {
+      //Strip commas and formatting
+      var col = row.map(String);
+      for (var i = 0; i < col.length; i++) {
+        if (col[i] == undefined) {col[i] = ''}
+        col[i] = col[i].toString().replace(/,/g, '');
+      }
+
+    }, //return fixed row[col...]
+  }
+  */
+
   {
     // Dayna Asche - everything
     // NOTE: Dayna's is the standard grid format we send to Item Update
     printname: "Graybar-Dayna",
+    priority: 100,
     filename: /EGAN COMPANY ACCUBID \d{2}\d{2}\d{4}\.csv/i,
     headers: [
       "Price Update Description",     //  0
@@ -36,7 +56,7 @@ var priceFormats = [
       "New Supplier Code",            // 23
       "Item Status"                   // 24
     ],
-    fix: function (row) {
+    fix: function (row, index) {
       var col = row.map(String);
       for (var i = 0; i < col.length; i++) {
         if (col[i] == undefined) {col[i] = ''}
@@ -53,24 +73,29 @@ var priceFormats = [
          */
       if (col[0].includes("CT)") && col[2] == "E") { //0 Description, 2 Unit
         var count = parseInt(col[0].substring(1, col[0].indexOf("CT)"))); //0 Description
+        var newct = 0;
         if (count < 2) {
           col[2] = "E";
+          newct = 1;
         } else if (count <= 100) {
           col[2] = "C";         // 2 Price Unit
           col[3]  *= 100/count; // 3 List Price
           col[11] *= 100/count; //11 Net Price
+          newct = 100;
         } else if (count <= 1000) {
           col[2] = "M";
           col[3]  *= 1000/count;
           col[11] *= 1000/count;
+          newct = 1000;
         } else { //over 1000, no items do this yet
           col[2] = "M";
           col[3]  *= count/1000;
           col[11] *= count/1000;
+          newct = 1000;
         };
         col[3] = col[3].toFixed(2);
         col[11] = col[11].toFixed(2);
-        conlog(col[7] + ": " + col[0] + " -- was E -- now " + col[2]);
+        conlog("    " + col[7] + ": " + col[0] + " -- " + col[2] + " $ x " + (newct/count).toFixed(2) + "");
       };
 
       col[15] = col[11];  //Col 3 Price == Net Price
@@ -79,6 +104,9 @@ var priceFormats = [
       col[6] = col[6].substring(0,29);
       if (col[3] == 0) { col[3] = col[11] }
       if (col[11] == 0) { col[11] = col[3] }
+
+      col[25] = index;
+      col[26] = this.priority;
       return col;
     }
   },
@@ -86,6 +114,7 @@ var priceFormats = [
   {
     //Dan Pritchard - pipe and wire
     printname: "Graybar-Dan",
+    priority: 999, //dan always wins
     filename: /ACCUBID \d{1,2}-\d{1,2}-\d{2}\.xlsx/i,
     headers: [
       "Alternate Description",
@@ -100,7 +129,7 @@ var priceFormats = [
       "EAN/UPC",      //UPC
       "Net price"
     ],
-    fix: function (row) {
+    fix: function (row, index) {
       var col = row.map(String);
       for (var i = 0; i < col.length; i++) {
         if (col[i] == undefined) {col[i] = ''}
@@ -116,7 +145,7 @@ var priceFormats = [
       if (col[0].includes("SS GALV CONDUIT W/COUP 10FT TYPE 304")) {
         col[2] = "100";   //2  Pricing unit
         col[10] *= 10;  //10 Net Price
-        conlog((col[9]?col[9]:col[7]) + ": " + col[0]);
+        conlog("    " + (col[9]?col[9]:col[7]) + ": " + col[0]);
         col[10].toFixed(2).toString();
       }
       //Convert price units from numeric to ECM
@@ -150,7 +179,7 @@ var priceFormats = [
         col[8],  //Supplier Name
         col[9],  //Supplier Code (DB Vendor Code) <- EAN/UPC or Material if blank
         "",      //Discount
-        col[10], //Net Price
+        col[10], //Net Price (DB Net Price)
         "",      //Comments
         "",      //Col 1 Price
         "",      //Col 2 Price
@@ -162,8 +191,10 @@ var priceFormats = [
         "",      //New Cat Num
         "",      //New Ref Num
         "",      //New Supplier Name
-        "",      //New Supplier Code (New Vendor Code)
-        "A3"     //Item Status
+        "",      //New Supplier Code (DB New Vendor Code)
+        "A3",     //Item Status
+        index,    //25 - line number
+        this.priority //26 - priority
       ];
     }
   }

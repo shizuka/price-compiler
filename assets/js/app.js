@@ -12,6 +12,8 @@ function conlog(msg) {
 }
 
 var progbar = document.getElementById('progress');
+var pn = 0; //progress now
+var pt = 1; //progress total
 function setProgress(lvl, max) {
   progbar.setAttribute('style', 'width: ' + (lvl/max*100) + '%');
 }
@@ -24,8 +26,6 @@ function setStart(state) {
   } else if (state == 0) {
     start.disabled = true;
   } else {
-    start.classList.add('btn-outline-success');
-    start.classList.remove('btn-success');
     start.disabled = true;
   }
 }
@@ -67,12 +67,14 @@ function setStart(state) {
     var reExtension = /(?:\.([^.]+))?$/; //regex to find extension
     var filestoload = 0;
     var filesloaded = 0;
-
+    var today = (new Date()).toLocaleString('en-us', {year: 'numeric', month: '2-digit', day: '2-digit'}).replace(/(\d+)\/(\d+)\/(\d+)/, '$3-$1-$2');
     this.books = [];      // [ {filename, format, sheet, ... } , ... ]
 
+    this.download;
+
     this.rowsfixed = [];  // [ [cols] , ... ]
-    this.uniqueUPCs = []; // { UPC: [row] , ... }
-    this.finalOutput = [];// [ [cols] , ... ]
+    this.dupes = []; // [ upc, upc, ... ]
+    this.finalOutput = XLSX.utils.book_new();
 
     this.hideHowto = false;
     this.showDownload = false;
@@ -122,12 +124,12 @@ function setStart(state) {
 
         var enLoad = new Date();
         if (format == null) {
-          conlog("...file [ " + f.name + " ] does not match any known schema, skipped.");
+          conlog("[!] File [" + f.name + "] does not match any known schema, skipped.");
         } else {
           var skip = false;
           for (var i = 0; i < vm.books.length; i++) {
             if (vm.books[i].format == format) {
-              conlog("...already have a " + priceFormats[format].printname);
+              conlog("[_] Already have a " + priceFormats[format].printname + ", skipped.");
               skip = true;
             }
           }
@@ -139,7 +141,7 @@ function setStart(state) {
               sheet: worksheet
             });
             $scope.$apply();
-            conlog("Read [ " + f.name + " ] in " + (enLoad - stLoad) + "ms.");
+            conlog("[R] [" + f.name + "] in " + (enLoad - stLoad) + "ms.");
           }
         }
         updateLoadProgress();
@@ -167,7 +169,7 @@ function setStart(state) {
               loadBook(file);
             } else {
               filestoload--;
-              console.warn("..["+i+"] has invalid extension " + ext.toUpperCase() + ", skipped.");
+              console.warn("... ["+i+"] has invalid extension " + ext.toUpperCase() + ", skipped.");
             }
           }
         }
@@ -184,16 +186,18 @@ function setStart(state) {
     this.startCompile = function () {
       setStart(2);
       hideHowto = true;
-      setProgStatus("Starting compile...");
-      conlog("Compiling...");
+      setProgStatus("Compiling...");
+      conlog("");
+      conlog("Starting compile...");
       var sheetlen = 0;
       for (var i = 0; i < vm.books.length; i++) {
         sheetlen += vm.books[i].sheet.length - 1; //-1 to skip headers
       }
-      var pn = 0; //progress now
-      var pt = sheetlen * 3; //progress total
+      pn = 0; //progress now
+      pt = sheetlen * 3; //progress total
       setProgress(pn,pt);
-      conlog("...total lines to process: " + pt + ".");
+      conlog("...total lines to process: " + sheetlen + ".");
+      conlog("");
       var sTotal = new Date();
 
       //** STEP 1 - FORMAT FIXES **//
@@ -201,46 +205,73 @@ function setStart(state) {
       for (var bi = 0; bi < this.books.length; bi++) {
         var b = this.books[bi];
         var sFix = new Date();
-        conlog("[1] Fixing " + b.formatname + "...");
+        conlog("[" + bi + "] Fixing " + b.formatname + "(" + b.sheet.length + ")...");
         setProgStatus("Fixing " + b.formatname + "...");
         for (var ri = 1; ri < b.sheet.length; ri++) { //ri = 1, to skip headers
-          this.rowsfixed.push(priceFormats[b.format].fix(b.sheet[ri]));
+          this.rowsfixed.push(priceFormats[b.format].fix(b.sheet[ri], ri));
           pn++;
           setProgress(pn,pt);
         }
         var eFix = new Date();
-        conlog("[1] Fixed " + b.formatname + " in " + (eFix - sFix) + "ms.");
+        conlog("[" + bi + "] Fixed " + b.formatname + " in " + (eFix - sFix) + "ms.");
       }
       var eFixes = new Date();
-      conlog("[1] Fixed all items in " + (eFixes - sFixes) + "ms.");
+      conlog("Fixed all items in " + (eFixes - sFixes) + "ms.");
       
-      //** STEP 2 - IDENTIFY UNIQUES **//
-      setProgStatus("Identifying uniques...");
-      conlog("[2] Identifying uniques...");
+      //** STEP 2 - IDENTIFY DUPLICATES **//
+      setProgStatus("Identifying duplicates...");
+      conlog("");
+      conlog("Identifying duplicates...");
       var sUniq = new Date();
-      for (var ri = 0; ri < this.rowsfixed.length; ri++) {
-        var r = this.rowsfixed[ri];
-        var upc = r[9]; //9 Vendor Code
-        if (this.uniqueUPCs[upc]) {
-          this.uniqueUPCs[upc].push(r);
-        } else {
-          this.uniqueUPCs[upc] = [r];
-        }
-        pn++;
-        setProgress(pn,pt);
-      }
+      var upcs = this.rowsfixed.map(function(col, i) { return col[9] });
+      var uniqUpcs = upcs
+        .map((upc) => {
+          return {count: 1, upc: upc};
+        })
+        .reduce((a,b) => {
+          a[b.upc] = (a[b.upc] || 0) + b.count;
+          return a;
+        }, 
+      {});
+      this.dupes = Object.keys(uniqUpcs).filter((a) => uniqUpcs[a] > 1);
+
       var eUniq = new Date();
-      var uniq = Object.keys(this.uniqueUPCs).length;
-      conlog("[2] Identified " + uniq + " in " + (eUniq - sUniq) + "ms.");
-      pt = sheetlen * 2 + uniq;
+      conlog("Identified " + this.dupes.length + " duplicate UPCs, " + (this.rowsfixed.length - this.dupes.length) + " unique in " + (eUniq - sUniq) + "ms.");
+      pt = sheetlen * 2 + this.dupes.length;
       setProgress(pn, pt);
+
       //** STEP 3 - DEDUPLICATE **//
-      conlog("[3] Deduplicating...");
+      setProgStatus("Deduplicating...");
+      conlog("");
+      conlog("Deduplicating...");
+      var sDupe = new Date();
+      var uniqrows = this.rowsfixed.filter(c => !this.dupes.includes(c[9]));
+      var duperows = this.rowsfixed.filter(c => this.dupes.includes(c[9]));
+      
+      for (var di = 0; di < this.dupes.length; di++) {
+        var thisupc = duperows.filter(c => (c[9] == this.dupes[di]));
+        console.log(thisupc);
+      }
+
+      var eDupe = new Date();
+      conlog("Finished deduplicating in " + (eDupe - sDupe) + "ms.");
+
+      //** STEP 4 - BUILD OUTPUT **//
+      //XLSX.utils.book_append_sheet(this.finalOutput, XLSX.utils.aoa_to_sheet(dedupedrows), "Compiled Output");
+
+      //** STEP 5 - DONE **//
       var eTotal = new Date();
-      conlog("[ ] Finished compilation in " + (eTotal - sTotal) + "ms.");
+      conlog("");
+      conlog("Finished compilation in " + (eTotal - sTotal) + "ms.");
       conlog("Ready to download.");
     }
 
-    conlog("App loaded.");
+    conlog("Enterprise Price Update Compiler");
+    conlog(
+      (new Date())
+      .toLocaleString('en-us', {year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit'})
+      .replace(/,/, '')
+      .replace(/(\d+)\/(\d+)\/(\d+)/, '$3-$1-$2')
+    );
   });
 })();
