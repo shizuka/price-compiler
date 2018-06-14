@@ -248,15 +248,20 @@ function setStart(state) {
       var duperows = this.rowsfixed.filter(c => this.dupes.includes(c[9]));
       
       for (var di = 0; di < this.dupes.length; di++) {
-        var thisupc = duperows.filter(c => (c[9] == this.dupes[di])); //get all items with this duped upc
-        var bestPri = thisupc.reduce((max, b) => Math.max(max, b[27]), thisupc[0][27]); //find the highest priority in these items
-        var thispri = thisupc.filter(c => (c[27] == bestPri)).sort((a,b) => (a[11] - b[11])); //get items with this priority and sort price ascending
-        var winner = thispri[0]; //get the top item -- it will be highest priority for this duped upc, and lowest price within this priority
+        var thisUpc = duperows.filter(c => (c[9] == this.dupes[di])); //get all items with this duped upc
+        var bestPriority = thisUpc.reduce((max, b) => Math.max(max, b[27]), thisUpc[0][27]); //find the highest priority in these items
+        var bestPrice = thisUpc.reduce((min, b) => Math.min(min, b[11]), thisUpc[0][11]); //find the lowest price
+        var thisPriorityItems = thisUpc.filter(c => (c[27] == bestPriority)).sort((a,b) => (a[11] - b[11])); //get items with this priority and sort price ascending
+        var lowestPrice = thisUpc.filter(c => (c[11] == bestPrice))[0];
+        var winner = thisPriorityItems[0]; //get the top item -- it will be highest priority for this duped upc, and lowest price within this priority
         var msg = "    " + this.dupes[di] + ": ";
-        for(var item of thisupc) {
+        for(var item of thisUpc) {
           msg += "[" + item[25] + ":" + item[26] + "]$" + item[11] + " ";
         }
         msg += "-- Picked [" + winner[25] + ":" + winner[26] + "]";
+        if (lowestPrice[27] != winner[27]) {
+          msg += " !! Cheaper [" + lowestPrice[25] + ":" + lowestPrice[26] + "]";
+        }
         conlog(msg);
         uniqrows.push(winner);
       }
