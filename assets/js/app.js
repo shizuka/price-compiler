@@ -184,6 +184,7 @@ function setStart(state) {
 
     //**** COMPILER ****//
     this.startCompile = function () {
+      var errlog = [];
       setStart(2);
       hideHowto = true;
       setProgStatus("Compiling...");
@@ -258,9 +259,10 @@ function setStart(state) {
         for(var item of thisUpc) {
           msg += "[" + item[25] + ":" + item[26] + "]$" + item[11] + " ";
         }
-        msg += "-- Picked [" + winner[25] + ":" + winner[26] + "]";
+        msg += "-- > [" + winner[25] + ":" + winner[26] + "]";
         if (lowestPrice[27] != winner[27]) {
-          msg += " !! Cheaper [" + lowestPrice[25] + ":" + lowestPrice[26] + "]";
+          msg += " ===!> [" + lowestPrice[25] + ":" + lowestPrice[26] + "]";
+          errlog.push("Dupe UPC " + this.dupes[di] + " picked [" + winner[25] + ":" + winner[26] + "]$" + winner[11] + " -- but [" + lowestPrice[25] + ":" + lowestPrice[26] + "]$" + lowestPrice[11] + " is cheaper!");
         }
         conlog(msg);
         uniqrows.push(winner);
@@ -314,6 +316,12 @@ function setStart(state) {
       document.getElementById('start').classList.remove('btn-success');
       document.getElementById('start').classList.add('btn-outline-light');
       conlog("Finished compilation in " + (eTotal - sTotal) + "ms.");
+      conlog("");
+      conlog(errlog.length + " flags raised...");  
+      for (var msg of errlog) { 
+        conlog("    " + msg);
+      }
+      conlog("");
       conlog("Ready to download.");
     }
 
