@@ -70,11 +70,10 @@ function setStart(state) {
     var today = (new Date()).toLocaleString('en-us', {year: 'numeric', month: '2-digit', day: '2-digit'}).replace(/(\d+)\/(\d+)\/(\d+)/, '$3-$1-$2');
     this.books = [];      // [ {filename, format, sheet, ... } , ... ]
 
-    this.download;
-
     this.rowsfixed = [];  // [ [cols] , ... ]
     this.dupes = []; // [ upc, upc, ... ]
     this.finalOutput = XLSX.utils.book_new();
+    this.fnout = "";
 
     this.hideHowto = false;
     this.showDownload = false;
@@ -141,7 +140,7 @@ function setStart(state) {
               sheet: worksheet
             });
             $scope.$apply();
-            conlog("[R] [" + f.name + "] in " + (enLoad - stLoad) + "ms.");
+            conlog("Read [" + f.name + "] in " + (enLoad - stLoad) + "ms.");
           }
         }
         updateLoadProgress();
@@ -156,6 +155,7 @@ function setStart(state) {
       if (e.dataTransfer.items) {
         filestoload = e.dataTransfer.items.length;
         filesloaded = 0;
+        progbar.classList.add('bg-warning');
         setProgStatus("Loading files...");
         setProgress(1,1);
         document.getElementById('start').classList.remove('btn-outline-light');
@@ -187,30 +187,29 @@ function setStart(state) {
       setStart(2);
       hideHowto = true;
       setProgStatus("Compiling...");
+      setProgress(0,5);
+      progbar.classList.remove('bg-warning');
+      progbar.classList.add('bg-success');
       conlog("");
       conlog("Starting compile...");
       var sheetlen = 0;
       for (var i = 0; i < vm.books.length; i++) {
         sheetlen += vm.books[i].sheet.length - 1; //-1 to skip headers
       }
-      pn = 0; //progress now
-      pt = sheetlen * 3; //progress total
-      setProgress(pn,pt);
       conlog("...total lines to process: " + sheetlen + ".");
       conlog("");
       var sTotal = new Date();
 
       //** STEP 1 - FORMAT FIXES **//
+      setProgress(1,5);
       var sFixes = new Date();
       for (var bi = 0; bi < this.books.length; bi++) {
         var b = this.books[bi];
         var sFix = new Date();
-        conlog("[" + bi + "] Fixing " + b.formatname + "(" + b.sheet.length + ")...");
+        conlog("[" + bi + "] Fixing " + b.formatname + "(" + (b.sheet.length-1) + ")...");
         setProgStatus("Fixing " + b.formatname + "...");
         for (var ri = 1; ri < b.sheet.length; ri++) { //ri = 1, to skip headers
-          this.rowsfixed.push(priceFormats[b.format].fix(b.sheet[ri], ri));
-          pn++;
-          setProgress(pn,pt);
+          this.rowsfixed.push(priceFormats[b.format].fix(b.sheet[ri], bi, ri));
         }
         var eFix = new Date();
         conlog("[" + bi + "] Fixed " + b.formatname + " in " + (eFix - sFix) + "ms.");
@@ -220,6 +219,7 @@ function setStart(state) {
       
       //** STEP 2 - IDENTIFY DUPLICATES **//
       setProgStatus("Identifying duplicates...");
+      setProgress(2,5);
       conlog("");
       conlog("Identifying duplicates...");
       var sUniq = new Date();
@@ -237,11 +237,10 @@ function setStart(state) {
 
       var eUniq = new Date();
       conlog("Identified " + this.dupes.length + " duplicate UPCs, " + (this.rowsfixed.length - this.dupes.length) + " unique in " + (eUniq - sUniq) + "ms.");
-      pt = sheetlen * 2 + this.dupes.length;
-      setProgress(pn, pt);
 
       //** STEP 3 - DEDUPLICATE **//
       setProgStatus("Deduplicating...");
+      setProgress(3,5);
       conlog("");
       conlog("Deduplicating...");
       var sDupe = new Date();
@@ -249,21 +248,72 @@ function setStart(state) {
       var duperows = this.rowsfixed.filter(c => this.dupes.includes(c[9]));
       
       for (var di = 0; di < this.dupes.length; di++) {
-        var thisupc = duperows.filter(c => (c[9] == this.dupes[di]));
-        console.log(thisupc);
+        var thisupc = duperows.filter(c => (c[9] == this.dupes[di])); //get all items with this duped upc
+        var bestPri = thisupc.reduce((max, b) => Math.max(max, b[27]), thisupc[0][27]); //find the highest priority in these items
+        var thispri = thisupc.filter(c => (c[27] == bestPri)).sort((a,b) => (a[11] - b[11])); //get items with this priority and sort price ascending
+        var winner = thispri[0]; //get the top item -- it will be highest priority for this duped upc, and lowest price within this priority
+        var msg = "    " + this.dupes[di] + ": ";
+        for(var item of thisupc) {
+          msg += "[" + item[25] + ":" + item[26] + "]$" + item[11] + " ";
+        }
+        msg += "-- Picked [" + winner[25] + ":" + winner[26] + "]";
+        conlog(msg);
+        uniqrows.push(winner);
       }
 
       var eDupe = new Date();
       conlog("Finished deduplicating in " + (eDupe - sDupe) + "ms.");
 
       //** STEP 4 - BUILD OUTPUT **//
-      //XLSX.utils.book_append_sheet(this.finalOutput, XLSX.utils.aoa_to_sheet(dedupedrows), "Compiled Output");
+      setProgStatus("Building output file...");
+      setProgress(4,5);
+      conlog("");
+      conlog("Building output file [Compiled Price List " + today + ".csv]...");
+      uniqrows.unshift([
+        "Price Update Description",     //  0
+        "Price Date",                   //  1
+        "Price Unit",                   //  2
+        "List Price",                   //  3
+        "Price Code",                   //  4
+        "Manufacturer Name",            //  5
+        "Catalogue Number",             //  6
+        "Reference Number",             //  7
+        "Supplier Name",                //  8
+        "Supplier Code",                //  9 (UPC)
+        "Discount",                     // 10
+        "Net Price",                    // 11
+        "Comments",                     // 12
+        "Column 1 Price",               // 13
+        "Column 2 Price",               // 14 
+        "Column 3 Price",               // 15
+        "Resale Price",                 // 16
+        "New Price Code",               // 17
+        "New Price Update Description", // 18
+        "New Manufacturer Name",        // 19
+        "New Catalogue Number",         // 20
+        "New Reference Number",         // 21
+        "New Supplier Name",            // 22
+        "New Supplier Code",            // 23
+        "Item Status"                   // 24
+      ]);
+      uniqrows = uniqrows.map(function(v) { return v.slice(0, 25); }); //drop index, linenum, priority columns 25-27
+      XLSX.utils.book_append_sheet(this.finalOutput, XLSX.utils.aoa_to_sheet(uniqrows), "Compiled Output");
+      this.fnout = "Compiled Price List " + today + ".csv";
+      this.showDownload = true;
+      document.getElementById('dlfn').innerHTML = this.fnout;
 
       //** STEP 5 - DONE **//
       var eTotal = new Date();
-      conlog("");
+      setProgStatus("Done.");
+      setProgress(5,5);
+      document.getElementById('start').classList.remove('btn-success');
+      document.getElementById('start').classList.add('btn-outline-light');
       conlog("Finished compilation in " + (eTotal - sTotal) + "ms.");
       conlog("Ready to download.");
+    }
+
+    this.downloadOutput = function () {
+      XLSX.writeFile(this.finalOutput, this.fnout);
     }
 
     conlog("Enterprise Price Update Compiler");

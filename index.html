@@ -50,7 +50,7 @@
         </div>
         <div class="col">
           <div class="progress" style="height: 0.5rem">
-            <div id="progress" class="progress-bar progress-bar-striped"></div>
+            <div id="progress" class="progress-bar"></div>
           </div>
           <div id="progdet" class="progress-detail"></div>
         </div>
@@ -62,9 +62,9 @@
 
       <div class="downloads row" ng-show="ctrl.showDownload">
         <div class="col-2">
-          <button id="download" class="btn btn-block btn-success">Download</button>
+          <button id="download" class="btn btn-block btn-success" ng-click="ctrl.downloadOutput()">Download</button>
         </div>
-        <div class="filename col d-flex align-items-center">Dayna Dan Combined 20180531.csv</div>
+        <div id="dlfn" class="filename col d-flex align-items-center"></div>
       </div>
 
     </div>

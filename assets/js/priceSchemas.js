@@ -19,7 +19,7 @@ var priceFormats = [
         col[i] = col[i].toString().replace(/,/g, '');
       }
 
-    }, //return fixed row[col...]
+    }, //return fixed row[col...] //must add cols[25-27], file, linenum, priority
   }
   */
 
@@ -56,7 +56,7 @@ var priceFormats = [
       "New Supplier Code",            // 23
       "Item Status"                   // 24
     ],
-    fix: function (row, index) {
+    fix: function (row, book, index) {
       var col = row.map(String);
       for (var i = 0; i < col.length; i++) {
         if (col[i] == undefined) {col[i] = ''}
@@ -95,7 +95,7 @@ var priceFormats = [
         };
         col[3] = col[3].toFixed(2);
         col[11] = col[11].toFixed(2);
-        conlog("    " + col[7] + ": " + col[0] + " -- " + col[2] + " $ x " + (newct/count).toFixed(2) + "");
+        conlog("    " + col[9] + ": " + col[0] + " -- " + col[2] + " $ x " + (newct/count).toFixed(2) + "");
       };
 
       col[15] = col[11];  //Col 3 Price == Net Price
@@ -105,8 +105,10 @@ var priceFormats = [
       if (col[3] == 0) { col[3] = col[11] }
       if (col[11] == 0) { col[11] = col[3] }
 
-      col[25] = index;
-      col[26] = this.priority;
+      col[25] = book;
+      col[26] = index;
+      col[27] = this.priority;
+      col[12] = this.priority;
       return col;
     }
   },
@@ -129,7 +131,7 @@ var priceFormats = [
       "EAN/UPC",      //UPC
       "Net price"
     ],
-    fix: function (row, index) {
+    fix: function (row, book, index) {
       var col = row.map(String);
       for (var i = 0; i < col.length; i++) {
         if (col[i] == undefined) {col[i] = ''}
@@ -180,7 +182,7 @@ var priceFormats = [
         col[9],  //Supplier Code (DB Vendor Code) <- EAN/UPC or Material if blank
         "",      //Discount
         col[10], //Net Price (DB Net Price)
-        "",      //Comments
+        this.priority,      //Comments
         "",      //Col 1 Price
         "",      //Col 2 Price
         col[10], //Col 3 Price <- Net Price
@@ -193,6 +195,7 @@ var priceFormats = [
         "",      //New Supplier Name
         "",      //New Supplier Code (DB New Vendor Code)
         "A3",     //Item Status
+        book,     //file number
         index,    //25 - line number
         this.priority //26 - priority
       ];
