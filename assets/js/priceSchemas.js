@@ -11,7 +11,8 @@ var priceFormats = [
     priority: 0, //higher = better
     filename: /regex/i, //pattern match
     headers: ["Description", "Date", "Unit", ...],
-    fix(row, linenum) {
+    fix(arg) {
+      //arg = {row: [row to fix], bi: fileindex, ri: rowindex}
       //Strip commas and formatting
       var col = row.map(String);
       for (var i = 0; i < col.length; i++) {
@@ -56,8 +57,8 @@ var priceFormats = [
       "New Supplier Code",            // 23
       "Item Status"                   // 24
     ],
-    fix: function (row, book, index) {
-      var col = row.map(String);
+    fix: function (arg) {
+      var col = arg.row.map(String);
       for (var i = 0; i < col.length; i++) {
         if (col[i] == undefined) {col[i] = ''}
         col[i] = col[i].toString().replace(/,/g, '');
@@ -105,10 +106,10 @@ var priceFormats = [
       if (col[3] == 0) { col[3] = col[11] }
       if (col[11] == 0) { col[11] = col[3] }
 
-      col[25] = book;
-      col[26] = index;
+      col[25] = arg.bi;
+      col[26] = arg.ri;
       col[27] = this.priority;
-      col[12] = this.priority;
+      col[12] = this.priority; //set Comments to priority
       return col;
     }
   },
@@ -131,8 +132,8 @@ var priceFormats = [
       "EAN/UPC",      //UPC
       "Net price"
     ],
-    fix: function (row, book, index) {
-      var col = row.map(String);
+    fix: function (arg) {
+      var col = arg.row.map(String);
       for (var i = 0; i < col.length; i++) {
         if (col[i] == undefined) {col[i] = ''}
         col[i] = col[i].toString().replace(/,/g, '');
@@ -195,8 +196,8 @@ var priceFormats = [
         "",      //New Supplier Name
         "",      //New Supplier Code (DB New Vendor Code)
         "A3",     //Item Status
-        book,     //file number
-        index,    //25 - line number
+        arg.bi,     //file number
+        arg.ri,    //25 - line number
         this.priority //26 - priority
       ];
     }
