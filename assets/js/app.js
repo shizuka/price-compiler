@@ -25,7 +25,9 @@ function setStart(state) {
     start.classList.add('btn-success');
   } else if (state == 0) {
     start.disabled = true;
-  } else {
+  } else { //started compile
+    start.classList.remove('btn-success');
+    start.classList.add('btn-success-outline');
     start.disabled = true;
   }
 }
@@ -36,6 +38,8 @@ var rowsfixed = [];  // [ [cols] , ... ]
 var dupeUpcs = []; // [ upc, upc, ... ]
 var uniqrows = [];
 var duperows = [];
+var errlog = [];
+var sTotal = new Date();
 var finalOutput = XLSX.utils.book_new();
 var fnout = "";
 
@@ -77,7 +81,8 @@ var fnout = "";
     var filestoload = 0;
     var filesloaded = 0;
     var today = (new Date()).toLocaleString('en-us', {year: 'numeric', month: '2-digit', day: '2-digit'}).replace(/(\d+)\/(\d+)\/(\d+)/, '$3-$1-$2');
-    
+
+    this.books = [];
 
     this.hideHowto = false;
     this.showDownload = false;
@@ -102,6 +107,7 @@ var fnout = "";
         setStart(0);
       } else {
         setProgStatus("Ready.");
+        progbar.classList.remove('progress-bar-striped');
         setProgress(0,1);
         setStart(1);
       }
@@ -137,6 +143,7 @@ var fnout = "";
             }
           }
           if (!skip) {
+            vm.hideHowto = true;
             vm.books.push({
               name: f.name,
               format: format,
@@ -160,6 +167,7 @@ var fnout = "";
         filestoload = e.dataTransfer.items.length;
         filesloaded = 0;
         progbar.classList.add('bg-warning');
+        progbar.classList.add('progress-bar-striped');
         setProgStatus("Loading files...");
         setProgress(1,1);
         document.getElementById('start').classList.remove('btn-outline-light');
@@ -186,49 +194,47 @@ var fnout = "";
     window.addEventListener('drop', handleDrop, false);
     window.addEventListener('dragover', handleDragover, false);
 
+    //**** DATA PROCESSING ****//
+    //Sorry about this Future Me, figure out how to clean this up yeah?
+
     this.doBook = function (bi) {
       var b = vm.books[bi];
       var s = b.sheet;
       var sFix = new Date();
       conlog("[" + bi + "] Fixing " + b.formatname + "(" + (s.length-1) + ")...");
 
-      var ri = 1, max = s.length, batch = 100;
+      var ri = 1, max = s.length, batch = 50;
       (function nextBatch() {
         setProgStatus("Fixing " + b.formatname + " (" + ri + "/" + s.length + ")...");
         for (var i = 0; i < batch && ri < max; ++i, ++ri) {
-          vm.rowsfixed.push(priceFormats[b.format].fix({bi: bi, ri: ri, row: s[ri]}));
+          rowsfixed.push(priceFormats[b.format].fix({bi: bi, ri: ri, row: s[ri]}));
         }
         if (ri < max) {
           setTimeout(nextBatch, 0);
         } else { 
           var eFix = new Date();
           conlog("[" + bi + "] Fixed " + vm.books[bi].formatname + " in " + (eFix - sFix) + "ms.");
-          setTimeout(vm.finishBook.bind(null, bi, sFix), 0) 
+          setTimeout(vm.finishBook.bind(null, bi), 0);
         }
       })();
-
-      /*
-      for (var ri = 1; ri < s.length; ri++) { //ri = 1, to skip headers
-        this.rowsfixed.push(priceFormats[b.format].fix({bi: bi, ri: ri, row: s[ri]}));
-      }*/
-
-
-      
     }
-    this.finishBook = function (bi, sFix) {
+
+    this.finishBook = function (bi) {
       if (bi < (vm.books.length-1)) {
-        setTimeout(vm.doBook.bind(bi+1),0);
+        setTimeout(vm.doBook.bind(null, ++bi),0);
       } else {
+        conlog("Finished all fixes.");
         setTimeout(vm.identifyDupes,0);
       }
     }
+
     this.identifyDupes = function () {
       setProgStatus("Identifying duplicates...");
       setProgress(2,5);
       conlog("");
       conlog("Identifying duplicates...");
       var sUniq = new Date();
-      var upcs = vm.rowsfixed.map(function(col, i) { return col[9] });
+      var upcs = rowsfixed.map(function(col, i) { return col[9] });
       var uniqUpcs = upcs
         .map((upc) => {
           return {count: 1, upc: upc};
@@ -238,24 +244,24 @@ var fnout = "";
           return a;
         }, 
       {});
-      vm.dupeUpcs = Object.keys(uniqUpcs).filter((a) => uniqUpcs[a] > 1);
+      dupeUpcs = Object.keys(uniqUpcs).filter((a) => uniqUpcs[a] > 1);
 
       var eUniq = new Date();
-      conlog("Identified " + vm.dupeUpcs.length + " duplicate UPCs, " + (vm.rowsfixed.length - vm.dupeUpcs.length) + " unique in " + (eUniq - sUniq) + "ms.");
+      conlog("Identified " + dupeUpcs.length + " duplicate UPCs, " + (rowsfixed.length - dupeUpcs.length) + " unique in " + (eUniq - sUniq) + "ms.");
       setTimeout(vm.doDedupe, 0);
     }
 
     this.doDedupe = function () {
-      setProgStatus("Deduplicating...");
       setProgress(3,5);
       conlog("");
       conlog("Deduplicating...");
       var sDupe = new Date();
-      var uniqrows = vm.rowsfixed.filter(c => !vm.dupeUpcs.includes(c[9]));
-      var duperows = vm.rowsfixed.filter(c => vm.dupeUpcs.includes(c[9]));
+      uniqrows = rowsfixed.filter(c => !dupeUpcs.includes(c[9]));
+      duperows = rowsfixed.filter(c => dupeUpcs.includes(c[9]));
       
-      var di = 0, max = vm.dupeUpcs.length, batch = 100;
+      var di = 0, max = dupeUpcs.length, batch = 10;
       (function nextBatch(){
+        setProgStatus("Deduplicating " + di + "/" + max + "...");
         for (var i = 0; i < batch && di < max; ++i, ++di) {
           vm.dedupeUpc(di);
         }
@@ -267,36 +273,36 @@ var fnout = "";
     }
 
     this.dedupeUpc = function (di) {
-      var thisUpc = vm.duperows.filter(c => (c[9] == vm.dupeUpcs[di])); //get all items with this duped upc
+      var thisUpc = duperows.filter(c => (c[9] == dupeUpcs[di])); //get all items with this duped upc
       var bestPriority = thisUpc.reduce((max, b) => Math.max(max, b[27]), thisUpc[0][27]); //find the highest priority in these items
       var bestPrice = thisUpc.reduce((min, b) => Math.min(min, b[11]), thisUpc[0][11]); //find the lowest price
       var thisPriorityItems = thisUpc.filter(c => (c[27] == bestPriority)).sort((a,b) => (a[11] - b[11])); //get items with this priority and sort price ascending
       var lowestPrice = thisUpc.filter(c => (c[11] == bestPrice))[0];
       var winner = thisPriorityItems[0]; //get the top item -- it will be highest priority for this duped upc, and lowest price within this priority
-      var msg = "    " + vm.dupeUpcs[di] + ": ";
+      var msg = "    " + dupeUpcs[di] + ": ";
       for(var item of thisUpc) {
         msg += "[" + item[25] + ":" + item[26] + "]$" + item[11] + " ";
       }
       msg += "-- > [" + winner[25] + ":" + winner[26] + "]";
       if (lowestPrice[27] != winner[27]) {
         msg += " ===!> [" + lowestPrice[25] + ":" + lowestPrice[26] + "]";
-        vm.errlog.push("Dupe UPC " + vm.dupeUpcs[di] + " picked [" + winner[25] + ":" + winner[26] + "]$" + winner[11] + " -- but [" + lowestPrice[25] + ":" + lowestPrice[26] + "]$" + lowestPrice[11] + " is cheaper!");
+        errlog.push("Dupe UPC " + dupeUpcs[di] + " picked [" + winner[25] + ":" + winner[26] + "]$" + winner[11] + " -- but [" + lowestPrice[25] + ":" + lowestPrice[26] + "]$" + lowestPrice[11] + " is cheaper!");
       }
       conlog(msg);
-      vm.uniqrows.push(winner);
+      uniqrows.push(winner);
     }
 
     this.finishDedupe = function (sDupe) {
       var eDupe = new Date();
       conlog("Finished deduplicating in " + (eDupe - sDupe) + "ms.");
-      setTimeout(vm.buildOutput, 0);
-    }
-
-    this.buildOutput = function () {
       setProgStatus("Building output file...");
       setProgress(4,5);
       conlog("");
       conlog("Building output file [Compiled Price List " + today + ".csv]...");
+      setTimeout(vm.buildOutput, 0);
+    }
+
+    this.buildOutput = function () {
       uniqrows.unshift([
         "Price Update Description",     //  0
         "Price Date",                   //  1
@@ -325,30 +331,36 @@ var fnout = "";
         "Item Status"                   // 24
       ]);
       uniqrows = uniqrows.map(function(v) { return v.slice(0, 25); }); //drop index, linenum, priority columns 25-27
-      XLSX.utils.book_append_sheet(vm.finalOutput, XLSX.utils.aoa_to_sheet(uniqrows), "Compiled Output");
+      XLSX.utils.book_append_sheet(finalOutput, XLSX.utils.aoa_to_sheet(uniqrows), "Compiled Output");
       vm.fnout = "Compiled Price List " + today + ".csv";
       vm.showDownload = true;
       document.getElementById('dlfn').innerHTML = vm.fnout;
+      setTimeout(vm.allDone, 0);
+    }
 
+    this.allDone = function () {
       var eTotal = new Date();
       setProgStatus("Done.");
       setProgress(5,5);
-      document.getElementById('start').classList.remove('btn-success');
       document.getElementById('start').classList.add('btn-outline-light');
       conlog("Finished compilation in " + (eTotal - sTotal) + "ms.");
       conlog("");
-      conlog(vm.errlog.length + " flags raised...");  
-      for (var msg of vm.errlog) { 
+      conlog(errlog.length + " flags raised...");  
+      for (var msg of errlog) { 
         conlog("    " + msg);
       }
       conlog("");
       conlog("Ready to download.");
+      $scope.$apply();
     }
 
     //**** COMPILER ****//
     this.startCompile = function () {
-      setStart(2);
-      hideHowto = true;
+      document.getElementById('start').classList.remove('btn-success');
+      document.getElementById('start').classList.add('btn-success-outline');
+      document.getElementById('start').disabled = true;
+      document.getElementById('console').classList.add('expand');
+      
       setProgStatus("Compiling...");
       setProgress(0,5);
       progbar.classList.remove('bg-warning');
@@ -361,17 +373,16 @@ var fnout = "";
       }
       conlog("...total lines to process: " + sheetlen + ".");
       conlog("");
-      var sTotal = new Date();
+      sTotal = new Date();
 
       //** STEP 1 - FORMAT FIXES **//
       setProgress(1,5);
-      var sFixes = new Date();
-      this.doBook(0);
+      setTimeout(vm.doBook.bind(null, 0), 1000);
 
     } //end startCompile
 
     this.downloadOutput = function () {
-      XLSX.writeFile(this.finalOutput, this.fnout);
+      XLSX.writeFile(finalOutput, vm.fnout);
     }
 
     conlog("Enterprise Price Update Compiler");

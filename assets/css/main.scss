@@ -172,9 +172,15 @@ body {
   color: $ct-console;
   font-family: 'Courier New', Courier, monospace;
   padding: 1em;
-  min-height: 15em;
+  min-height: 10em;
   width: 100%;
   line-height: 1.25;
+  overflow-y: scroll;
+
+  &.expand {
+    min-height: 25em;
+    @include transition(min-height 1s ease 0s);
+  }
 }
 
 .downloads {
