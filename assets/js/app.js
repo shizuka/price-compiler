@@ -30,6 +30,15 @@ function setStart(state) {
   }
 }
 
+//**** BOOK PROCESSING ****//
+var books = [];      // [ {filename, format, sheet, ... } , ... ]
+var rowsfixed = [];  // [ [cols] , ... ]
+var dupeUpcs = []; // [ upc, upc, ... ]
+var uniqrows = [];
+var duperows = [];
+var finalOutput = XLSX.utils.book_new();
+var fnout = "";
+
 //**** ANGULAR ****//
 (function() {
   var app = angular.module('eganPriceUpdate', []).config(function($interpolateProvider){
@@ -68,12 +77,7 @@ function setStart(state) {
     var filestoload = 0;
     var filesloaded = 0;
     var today = (new Date()).toLocaleString('en-us', {year: 'numeric', month: '2-digit', day: '2-digit'}).replace(/(\d+)\/(\d+)\/(\d+)/, '$3-$1-$2');
-    this.books = [];      // [ {filename, format, sheet, ... } , ... ]
-
-    this.rowsfixed = [];  // [ [cols] , ... ]
-    this.dupes = []; // [ upc, upc, ... ]
-    this.finalOutput = XLSX.utils.book_new();
-    this.fnout = "";
+    
 
     this.hideHowto = false;
     this.showDownload = false;
@@ -182,49 +186,49 @@ function setStart(state) {
     window.addEventListener('drop', handleDrop, false);
     window.addEventListener('dragover', handleDragover, false);
 
-    //**** COMPILER ****//
-    this.startCompile = function () {
-      var errlog = [];
-      setStart(2);
-      hideHowto = true;
-      setProgStatus("Compiling...");
-      setProgress(0,5);
-      progbar.classList.remove('bg-warning');
-      progbar.classList.add('bg-success');
-      conlog("");
-      conlog("Starting compile...");
-      var sheetlen = 0;
-      for (var i = 0; i < vm.books.length; i++) {
-        sheetlen += vm.books[i].sheet.length - 1; //-1 to skip headers
-      }
-      conlog("...total lines to process: " + sheetlen + ".");
-      conlog("");
-      var sTotal = new Date();
+    this.doBook = function (bi) {
+      var b = vm.books[bi];
+      var s = b.sheet;
+      var sFix = new Date();
+      conlog("[" + bi + "] Fixing " + b.formatname + "(" + (s.length-1) + ")...");
 
-      //** STEP 1 - FORMAT FIXES **//
-      setProgress(1,5);
-      var sFixes = new Date();
-      for (var bi = 0; bi < this.books.length; bi++) {
-        var b = this.books[bi];
-        var sFix = new Date();
-        conlog("[" + bi + "] Fixing " + b.formatname + "(" + (b.sheet.length-1) + ")...");
-        setProgStatus("Fixing " + b.formatname + "...");
-        for (var ri = 1; ri < b.sheet.length; ri++) { //ri = 1, to skip headers
-          this.rowsfixed.push(priceFormats[b.format].fix(b.sheet[ri], bi, ri));
+      var ri = 1, max = s.length, batch = 100;
+      (function nextBatch() {
+        setProgStatus("Fixing " + b.formatname + " (" + ri + "/" + s.length + ")...");
+        for (var i = 0; i < batch && ri < max; ++i, ++ri) {
+          vm.rowsfixed.push(priceFormats[b.format].fix({bi: bi, ri: ri, row: s[ri]}));
         }
-        var eFix = new Date();
-        conlog("[" + bi + "] Fixed " + b.formatname + " in " + (eFix - sFix) + "ms.");
-      }
-      var eFixes = new Date();
-      conlog("Fixed all items in " + (eFixes - sFixes) + "ms.");
+        if (ri < max) {
+          setTimeout(nextBatch, 0);
+        } else { 
+          var eFix = new Date();
+          conlog("[" + bi + "] Fixed " + vm.books[bi].formatname + " in " + (eFix - sFix) + "ms.");
+          setTimeout(vm.finishBook.bind(null, bi, sFix), 0) 
+        }
+      })();
+
+      /*
+      for (var ri = 1; ri < s.length; ri++) { //ri = 1, to skip headers
+        this.rowsfixed.push(priceFormats[b.format].fix({bi: bi, ri: ri, row: s[ri]}));
+      }*/
+
+
       
-      //** STEP 2 - IDENTIFY DUPLICATES **//
+    }
+    this.finishBook = function (bi, sFix) {
+      if (bi < (vm.books.length-1)) {
+        setTimeout(vm.doBook.bind(bi+1),0);
+      } else {
+        setTimeout(vm.identifyDupes,0);
+      }
+    }
+    this.identifyDupes = function () {
       setProgStatus("Identifying duplicates...");
       setProgress(2,5);
       conlog("");
       conlog("Identifying duplicates...");
       var sUniq = new Date();
-      var upcs = this.rowsfixed.map(function(col, i) { return col[9] });
+      var upcs = vm.rowsfixed.map(function(col, i) { return col[9] });
       var uniqUpcs = upcs
         .map((upc) => {
           return {count: 1, upc: upc};
@@ -234,44 +238,61 @@ function setStart(state) {
           return a;
         }, 
       {});
-      this.dupes = Object.keys(uniqUpcs).filter((a) => uniqUpcs[a] > 1);
+      vm.dupeUpcs = Object.keys(uniqUpcs).filter((a) => uniqUpcs[a] > 1);
 
       var eUniq = new Date();
-      conlog("Identified " + this.dupes.length + " duplicate UPCs, " + (this.rowsfixed.length - this.dupes.length) + " unique in " + (eUniq - sUniq) + "ms.");
+      conlog("Identified " + vm.dupeUpcs.length + " duplicate UPCs, " + (vm.rowsfixed.length - vm.dupeUpcs.length) + " unique in " + (eUniq - sUniq) + "ms.");
+      setTimeout(vm.doDedupe, 0);
+    }
 
-      //** STEP 3 - DEDUPLICATE **//
+    this.doDedupe = function () {
       setProgStatus("Deduplicating...");
       setProgress(3,5);
       conlog("");
       conlog("Deduplicating...");
       var sDupe = new Date();
-      var uniqrows = this.rowsfixed.filter(c => !this.dupes.includes(c[9]));
-      var duperows = this.rowsfixed.filter(c => this.dupes.includes(c[9]));
+      var uniqrows = vm.rowsfixed.filter(c => !vm.dupeUpcs.includes(c[9]));
+      var duperows = vm.rowsfixed.filter(c => vm.dupeUpcs.includes(c[9]));
       
-      for (var di = 0; di < this.dupes.length; di++) {
-        var thisUpc = duperows.filter(c => (c[9] == this.dupes[di])); //get all items with this duped upc
-        var bestPriority = thisUpc.reduce((max, b) => Math.max(max, b[27]), thisUpc[0][27]); //find the highest priority in these items
-        var bestPrice = thisUpc.reduce((min, b) => Math.min(min, b[11]), thisUpc[0][11]); //find the lowest price
-        var thisPriorityItems = thisUpc.filter(c => (c[27] == bestPriority)).sort((a,b) => (a[11] - b[11])); //get items with this priority and sort price ascending
-        var lowestPrice = thisUpc.filter(c => (c[11] == bestPrice))[0];
-        var winner = thisPriorityItems[0]; //get the top item -- it will be highest priority for this duped upc, and lowest price within this priority
-        var msg = "    " + this.dupes[di] + ": ";
-        for(var item of thisUpc) {
-          msg += "[" + item[25] + ":" + item[26] + "]$" + item[11] + " ";
+      var di = 0, max = vm.dupeUpcs.length, batch = 100;
+      (function nextBatch(){
+        for (var i = 0; i < batch && di < max; ++i, ++di) {
+          vm.dedupeUpc(di);
         }
-        msg += "-- > [" + winner[25] + ":" + winner[26] + "]";
-        if (lowestPrice[27] != winner[27]) {
-          msg += " ===!> [" + lowestPrice[25] + ":" + lowestPrice[26] + "]";
-          errlog.push("Dupe UPC " + this.dupes[di] + " picked [" + winner[25] + ":" + winner[26] + "]$" + winner[11] + " -- but [" + lowestPrice[25] + ":" + lowestPrice[26] + "]$" + lowestPrice[11] + " is cheaper!");
-        }
-        conlog(msg);
-        uniqrows.push(winner);
-      }
+        if (di < max) {
+          setTimeout(nextBatch, 0);
+        } else { setTimeout(vm.finishDedupe.bind(null, sDupe)) }
+      })();
+      
+    }
 
+    this.dedupeUpc = function (di) {
+      var thisUpc = vm.duperows.filter(c => (c[9] == vm.dupeUpcs[di])); //get all items with this duped upc
+      var bestPriority = thisUpc.reduce((max, b) => Math.max(max, b[27]), thisUpc[0][27]); //find the highest priority in these items
+      var bestPrice = thisUpc.reduce((min, b) => Math.min(min, b[11]), thisUpc[0][11]); //find the lowest price
+      var thisPriorityItems = thisUpc.filter(c => (c[27] == bestPriority)).sort((a,b) => (a[11] - b[11])); //get items with this priority and sort price ascending
+      var lowestPrice = thisUpc.filter(c => (c[11] == bestPrice))[0];
+      var winner = thisPriorityItems[0]; //get the top item -- it will be highest priority for this duped upc, and lowest price within this priority
+      var msg = "    " + vm.dupeUpcs[di] + ": ";
+      for(var item of thisUpc) {
+        msg += "[" + item[25] + ":" + item[26] + "]$" + item[11] + " ";
+      }
+      msg += "-- > [" + winner[25] + ":" + winner[26] + "]";
+      if (lowestPrice[27] != winner[27]) {
+        msg += " ===!> [" + lowestPrice[25] + ":" + lowestPrice[26] + "]";
+        vm.errlog.push("Dupe UPC " + vm.dupeUpcs[di] + " picked [" + winner[25] + ":" + winner[26] + "]$" + winner[11] + " -- but [" + lowestPrice[25] + ":" + lowestPrice[26] + "]$" + lowestPrice[11] + " is cheaper!");
+      }
+      conlog(msg);
+      vm.uniqrows.push(winner);
+    }
+
+    this.finishDedupe = function (sDupe) {
       var eDupe = new Date();
       conlog("Finished deduplicating in " + (eDupe - sDupe) + "ms.");
+      setTimeout(vm.buildOutput, 0);
+    }
 
-      //** STEP 4 - BUILD OUTPUT **//
+    this.buildOutput = function () {
       setProgStatus("Building output file...");
       setProgress(4,5);
       conlog("");
@@ -304,12 +325,11 @@ function setStart(state) {
         "Item Status"                   // 24
       ]);
       uniqrows = uniqrows.map(function(v) { return v.slice(0, 25); }); //drop index, linenum, priority columns 25-27
-      XLSX.utils.book_append_sheet(this.finalOutput, XLSX.utils.aoa_to_sheet(uniqrows), "Compiled Output");
-      this.fnout = "Compiled Price List " + today + ".csv";
-      this.showDownload = true;
-      document.getElementById('dlfn').innerHTML = this.fnout;
+      XLSX.utils.book_append_sheet(vm.finalOutput, XLSX.utils.aoa_to_sheet(uniqrows), "Compiled Output");
+      vm.fnout = "Compiled Price List " + today + ".csv";
+      vm.showDownload = true;
+      document.getElementById('dlfn').innerHTML = vm.fnout;
 
-      //** STEP 5 - DONE **//
       var eTotal = new Date();
       setProgStatus("Done.");
       setProgress(5,5);
@@ -317,13 +337,38 @@ function setStart(state) {
       document.getElementById('start').classList.add('btn-outline-light');
       conlog("Finished compilation in " + (eTotal - sTotal) + "ms.");
       conlog("");
-      conlog(errlog.length + " flags raised...");  
-      for (var msg of errlog) { 
+      conlog(vm.errlog.length + " flags raised...");  
+      for (var msg of vm.errlog) { 
         conlog("    " + msg);
       }
       conlog("");
       conlog("Ready to download.");
     }
+
+    //**** COMPILER ****//
+    this.startCompile = function () {
+      setStart(2);
+      hideHowto = true;
+      setProgStatus("Compiling...");
+      setProgress(0,5);
+      progbar.classList.remove('bg-warning');
+      progbar.classList.add('bg-success');
+      conlog("");
+      conlog("Starting compile...");
+      var sheetlen = 0;
+      for (var i = 0; i < vm.books.length; i++) {
+        sheetlen += vm.books[i].sheet.length - 1; //-1 to skip headers
+      }
+      conlog("...total lines to process: " + sheetlen + ".");
+      conlog("");
+      var sTotal = new Date();
+
+      //** STEP 1 - FORMAT FIXES **//
+      setProgress(1,5);
+      var sFixes = new Date();
+      this.doBook(0);
+
+    } //end startCompile
 
     this.downloadOutput = function () {
       XLSX.writeFile(this.finalOutput, this.fnout);
