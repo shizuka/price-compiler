@@ -35,12 +35,12 @@ var priceFormats = [
       "Price Date",                   //  1
       "Price Unit",                   //  2
       "List Price",                   //  3
-      "Price Code",                   //  4
+      "Price Code",                   //  4 (UPC)
       "Manufacturer Name",            //  5
       "Catalogue Number",             //  6
       "Reference Number",             //  7
       "Supplier Name",                //  8
-      "Supplier Code",                //  9 (UPC)
+      "Supplier Code",                //  9 (GRAYBAR UPC)
       "Discount",                     // 10
       "Net Price",                    // 11
       "Comments",                     // 12
@@ -127,7 +127,7 @@ var priceFormats = [
       "Price Code",
       "Vendor Name",
       "Description",
-      "Material",
+      "Material",     //GRAYBAR UPC
       "Suplier Name",
       "EAN/UPC",      //UPC
       "Net price"
@@ -169,18 +169,19 @@ var priceFormats = [
       col[6] = col[6].substring(0,29);
       if (col[3] == 0) { col[3] = col[10] }
       if (col[10] == 0) { col[10] = col[3] }
+
       //Convert to standard format (Dayna)
       return [
         col[0],  //Description
         col[1],  //Date
         col[2],  //Unit
         col[3],  //List Price
-        col[4],  //Price Code
+        col[9],  //Price Code <- UPC/Material-where-blank
         col[5],  //Manufacturer Name <- Vendor Name
         col[6],  //Catalog Number <- Description
         col[7],  //Ref Number <- Material
         col[8],  //Supplier Name
-        col[9],  //Supplier Code (DB Vendor Code) <- EAN/UPC or Material if blank
+        col[7],  //Supplier Code <- Material/GraybarUPC
         "",      //Discount
         col[10], //Net Price (DB Net Price)
         this.priority,      //Comments

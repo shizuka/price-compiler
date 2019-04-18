@@ -308,12 +308,12 @@ var fnout = "";
         "Price Date",                   //  1
         "Price Unit",                   //  2
         "List Price",                   //  3
-        "Price Code",                   //  4
+        "Price Code",                   //  4 (UPC)
         "Manufacturer Name",            //  5
         "Catalogue Number",             //  6
         "Reference Number",             //  7
         "Supplier Name",                //  8
-        "Supplier Code",                //  9 (UPC)
+        "Supplier Code",                //  9 (GRAYBAR UPC)
         "Discount",                     // 10
         "Net Price",                    // 11
         "Comments",                     // 12
